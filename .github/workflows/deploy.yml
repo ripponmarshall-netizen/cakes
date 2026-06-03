@@ -1,0 +1,70 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow the workflow to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deployment at a time; let a newer run supersede an in-flight one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Switches the Pages "source" to GitHub Actions on first run.
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Build
+        env:
+          BASE_PATH: /cakes/
+          # These values are public-safe (browser keys). Override them by adding
+          # repository Variables of the same name under Settings -> Secrets and
+          # variables -> Actions -> Variables.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://rpuwhqmcvogqnzezurcs.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_-wwgdS5hnqno4N2ra33bTg_CFBJLSUY' }}
+          VITE_SIGNUP_INVITE_CODE: ${{ vars.VITE_SIGNUP_INVITE_CODE || 'sweetteam' }}
+        run: npm run build
+
+      # SPA fallback: serve index.html for any unknown path.
+      - name: Add 404 fallback
+        run: cp dist/index.html dist/404.html
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
