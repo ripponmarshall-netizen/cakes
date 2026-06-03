@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-cream text-cocoa-800 font-sans;
+    background-image: radial-gradient(
+        circle at 15% 10%,
+        rgba(248, 205, 214, 0.35),
+        transparent 45%
+      ),
+      radial-gradient(circle at 85% 0%, rgba(252, 231, 235, 0.5), transparent 40%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .animate-rise {
+    animation: rise 0.25s ease-out;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
