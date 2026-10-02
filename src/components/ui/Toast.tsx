@@ -15,9 +15,9 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | undefined>(undefined)
 
 const toneStyles: Record<ToastTone, string> = {
-  success: 'bg-emerald-600',
+  success: 'bg-brand-700',
   error: 'bg-rose-600',
-  info: 'bg-cocoa-700',
+  info: 'bg-ink-800',
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -34,11 +34,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4">
         {items.map((t) => (
           <div
             key={t.id}
-            className={`animate-rise pointer-events-auto rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-soft ${toneStyles[t.tone]}`}
+            className={`animate-rise pointer-events-auto rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-lift ${toneStyles[t.tone]}`}
           >
             {t.message}
           </div>

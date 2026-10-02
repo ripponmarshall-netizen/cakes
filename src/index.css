@@ -6,30 +6,29 @@
   html {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-cream text-cocoa-800 font-sans;
-    background-image: radial-gradient(
-        circle at 15% 10%,
-        rgba(248, 205, 214, 0.35),
-        transparent 45%
-      ),
-      radial-gradient(circle at 85% 0%, rgba(252, 231, 235, 0.5), transparent 40%);
-    background-attachment: fixed;
-    min-height: 100vh;
+    @apply min-h-screen bg-canvas font-sans text-ink-800;
   }
 
-  h1,
-  h2,
-  h3 {
-    @apply font-display;
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
   }
 }
 
 @layer utilities {
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
   .animate-rise {
-    animation: rise 0.25s ease-out;
+    animation: rise 0.22s ease-out;
   }
   @keyframes rise {
     from {
@@ -40,5 +39,11 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }

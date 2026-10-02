@@ -1,53 +1,50 @@
-import type { Order, PaymentStatus } from './types'
+import { periodStartDate } from './calc'
 
-const currency = new Intl.NumberFormat('en-JM', {
-  style: 'currency',
-  currency: 'JMD',
-  currencyDisplay: 'narrowSymbol',
-})
+const whole = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+const cents = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-/** Format a number as Jamaican dollars, e.g. 3500 -> "J$3,500.00". */
+/** Jamaican dollars. Drops ".00" on whole amounts: 12000 -> "J$12,000", 12.5 -> "J$12.50". */
 export function formatMoney(amount: number | null | undefined): string {
   const value = typeof amount === 'number' && Number.isFinite(amount) ? amount : 0
-  // en-JM narrowSymbol renders "$"; prefix with J for clarity.
-  return `J${currency.format(value)}`
+  const abs = Math.abs(value)
+  const body = Number.isInteger(Math.round(abs * 100) / 100) ? whole.format(abs) : cents.format(abs)
+  return `${value < 0 ? '−' : ''}J$${body}`
 }
 
-/** Friendly date + time, e.g. "Jun 3, 2026 · 2:14 PM". */
-export function formatDateTime(iso: string): string {
-  const date = new Date(iso)
-  const d = date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  const t = date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-  return `${d} · ${t}`
+/** "Mar 2026" for the month a period starts in. */
+export function periodLabel(startIso: string, period: number): string {
+  return periodStartDate(startIso, period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
 
-/** Amount already collected for an order. */
-export function amountPaid(order: Pick<Order, 'payment_status' | 'deposit_amount' | 'total_amount'>): number {
-  switch (order.payment_status) {
-    case 'paid_in_full':
-      return order.total_amount
-    case 'deposit':
-      return order.deposit_amount
-    case 'unpaid':
-    default:
-      return 0
-  }
+/** "Mar 15" — short date for a period's start. */
+export function periodDay(startIso: string, period: number): string {
+  return periodStartDate(startIso, period).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-/** Outstanding balance for an order. */
-export function balanceDue(order: Pick<Order, 'payment_status' | 'deposit_amount' | 'total_amount'>): number {
-  return Math.max(order.total_amount - amountPaid(order), 0)
+/** "Jun 3, 2026" from a YYYY-MM-DD string, read as a local date. */
+export function formatDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export const STATUS_STYLES: Record<PaymentStatus, string> = {
-  paid_in_full: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
-  deposit: 'bg-amber-100 text-amber-700 ring-amber-200',
-  unpaid: 'bg-rose-100 text-rose-700 ring-rose-200',
+/** "Jun 3" from a YYYY-MM-DD string. */
+export function formatShortDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+/** Today's date as YYYY-MM-DD in local time. */
+export function todayIso(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?'
+}
+
+export function plural(n: number, word: string, pluralWord = `${word}s`): string {
+  return `${n} ${n === 1 ? word : pluralWord}`
 }
