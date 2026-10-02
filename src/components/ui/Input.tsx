@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type InputHTMLAttributes, type React
 import { Icon, type IconName } from './Icon'
 
 const fieldBase =
-  'w-full rounded-2xl border-0 bg-ink-50/70 px-4 py-3 text-[15px] text-ink-900 ring-1 ring-inset ring-ink-200/80 placeholder:text-ink-300 transition duration-200 hover:ring-ink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 disabled:bg-ink-50 disabled:text-ink-400'
+  'w-full rounded-2xl border-0 bg-ink-50/70 px-4 py-3 text-[15px] text-ink-900 ring-1 ring-inset ring-ink-200/80 placeholder:text-ink-300 transition duration-200 hover:ring-ink-300 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 disabled:bg-ink-50 disabled:text-ink-400'
 
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (
@@ -67,7 +67,7 @@ export function Toggle({
         }`}
       >
         <span
-          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-300 ease-spring ${checked ? 'translate-x-4' : ''}`}
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform duration-300 ease-spring ${checked ? 'translate-x-4' : ''}`}
         />
       </span>
     </label>
@@ -108,7 +108,7 @@ export function Segmented<T extends string>({
     <div ref={wrap} role="tablist" className={`relative flex rounded-2xl bg-ink-900/[0.05] p-1 ${size === 'lg' ? 'p-1.5' : ''}`}>
       <span
         aria-hidden
-        className="absolute bottom-1 top-1 rounded-xl bg-white shadow-[0_1px_2px_rgba(24,24,21,0.06),0_4px_12px_-4px_rgba(24,24,21,0.12)] transition-all duration-300 ease-out"
+        className="absolute bottom-1 top-1 rounded-xl bg-raised shadow-[0_1px_2px_rgba(24,24,21,0.06),0_4px_12px_-4px_rgba(24,24,21,0.12)] transition-all duration-300 ease-out"
         style={pill ? { left: pill.left, width: pill.width, top: size === 'lg' ? 6 : 4, bottom: size === 'lg' ? 6 : 4 } : { opacity: 0 }}
       />
       {options.map((o) => (

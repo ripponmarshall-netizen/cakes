@@ -144,7 +144,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
       ) : (
         <>
           {/* Across every partner */}
-          <section className="relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-6 text-white shadow-lift sm:p-7">
+          <section className="theme-light relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-6 text-white shadow-lift sm:p-7">
             <HeroRings />
             <div className="relative">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gold-200/90">

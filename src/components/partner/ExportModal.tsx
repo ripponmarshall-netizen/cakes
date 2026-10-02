@@ -31,7 +31,7 @@ export function ExportModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
             onClick={o.run}
             className="group flex w-full items-center gap-3.5 rounded-2xl p-4 text-left ring-1 ring-inset ring-ink-200/70 transition duration-200 hover:bg-ink-50/80 hover:ring-ink-300 active:scale-[0.99]"
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 text-gold-200 shadow-sm">
+            <span className="theme-light flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 text-gold-200 shadow-sm">
               <Icon name="file" size={18} />
             </span>
             <span className="min-w-0 flex-1">

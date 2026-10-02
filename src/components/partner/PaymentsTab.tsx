@@ -187,7 +187,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
             {r.status === 'paid' ? (
               <button type="button" onClick={() => setOpenRow(r.member.id)} className="animate-pop-in" aria-label={`${r.member.name}: paid — see details`}>
                 <span className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-50 px-3 text-[13px] font-bold text-brand-700 ring-1 ring-inset ring-brand-600/15">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-white">
+                  <span className="theme-light flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-white">
                     <Icon name="check" size={10} strokeWidth={3} />
                   </span>
                   Paid

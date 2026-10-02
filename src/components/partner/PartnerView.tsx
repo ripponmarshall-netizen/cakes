@@ -64,7 +64,7 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
   return (
     <div className="space-y-5">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-6 text-white shadow-lift sm:p-7">
+      <section className="theme-light relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-6 text-white shadow-lift sm:p-7">
         <HeroRings />
         <div className="relative flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gold-200 ring-1 ring-inset ring-white/10">
@@ -220,7 +220,7 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
       </div>
 
       {partner.notes && (
-        <section className="rounded-3xl bg-white/60 p-4 ring-1 ring-inset ring-ink-900/[0.05]">
+        <section className="rounded-3xl bg-surface/60 p-4 ring-1 ring-inset ring-ink-900/[0.05]">
           <p className="eyebrow mb-1.5">Notes</p>
           <p className="whitespace-pre-line text-sm leading-relaxed text-ink-600">{partner.notes}</p>
         </section>

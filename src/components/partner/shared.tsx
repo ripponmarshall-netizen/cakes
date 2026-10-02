@@ -17,10 +17,10 @@ export interface PartnerCtx {
 const avatarColors = [
   'bg-brand-100 text-brand-800',
   'bg-gold-100 text-gold-700',
-  'bg-[#e4ecf2] text-[#2c4a63]',
-  'bg-[#f3e3e1] text-[#7a3b33]',
-  'bg-[#e9e4f1] text-[#4b3c6b]',
-  'bg-[#efe6da] text-[#6b4a2a]',
+  'bg-sky-100 text-sky-800',
+  'bg-rose-100 text-rose-800',
+  'bg-amber-100 text-amber-800',
+  'bg-ink-100 text-ink-700',
 ]
 
 export function Avatar({ name, id, size = 'md' }: { name: string; id: string; size?: 'sm' | 'md' | 'lg' }) {
@@ -28,7 +28,7 @@ export function Avatar({ name, id, size = 'md' }: { name: string; id: string; si
   const dims = size === 'sm' ? 'h-9 w-9 text-[11px]' : size === 'lg' ? 'h-14 w-14 text-base' : 'h-10 w-10 text-xs'
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full font-bold ring-2 ring-white ${dims} ${avatarColors[hash % avatarColors.length]}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-bold ring-2 ring-surface ${dims} ${avatarColors[hash % avatarColors.length]}`}
       aria-hidden
     >
       {initials(name)}

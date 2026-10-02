@@ -63,7 +63,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6 print:static print:block">
       <div
-        className={`absolute inset-0 bg-brand-950/45 backdrop-blur-[3px] print:hidden ${leaving ? 'animate-fade-out' : 'animate-fade'}`}
+        className={`theme-light absolute inset-0 bg-brand-950/55 backdrop-blur-[3px] print:hidden ${leaving ? 'animate-fade-out' : 'animate-fade'}`}
         onClick={() => !leaving && onClose()}
         aria-hidden
       />
@@ -73,7 +73,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white shadow-lift outline-none sm:max-w-lg sm:rounded-4xl print:max-h-none print:max-w-none print:overflow-visible print:shadow-none ${
+        className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-surface shadow-lift outline-none sm:max-w-lg sm:rounded-4xl print:max-h-none print:max-w-none print:overflow-visible print:shadow-none ${
           leaving ? 'pointer-events-none animate-sheet-out sm:animate-pop-out' : 'animate-sheet-in sm:animate-pop-in'
         }`}
       >
@@ -96,7 +96,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
           {children}
         </div>
         {footer && (
-          <div className="pb-safe shrink-0 border-t border-ink-100 bg-white/95 px-5 pt-4 backdrop-blur sm:px-7 sm:pb-6 print:hidden">{footer}</div>
+          <div className="pb-safe shrink-0 border-t border-ink-100 bg-surface/95 px-5 pt-4 backdrop-blur sm:px-7 sm:pb-6 print:hidden">{footer}</div>
         )}
       </div>
     </div>,

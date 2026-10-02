@@ -44,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex max-w-md items-center gap-2.5 rounded-2xl bg-ink-900/95 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-lift ring-1 ring-white/10 backdrop-blur ${
+            className={`theme-light pointer-events-auto flex max-w-md items-center gap-2.5 rounded-2xl bg-ink-900/95 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-lift ring-1 ring-white/10 backdrop-blur ${
               t.leaving ? 'animate-pop-out' : 'animate-pop-in'
             }`}
           >

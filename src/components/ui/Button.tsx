@@ -12,11 +12,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_6px_16px_-8px_rgba(18,59,46,0.7)] hover:from-brand-700 hover:to-brand-800 focus-visible:ring-brand-400',
-  secondary: 'bg-white text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:ring-ink-300 focus-visible:ring-brand-300',
+    'theme-light bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_6px_16px_-8px_rgba(18,59,46,0.7)] hover:from-brand-700 hover:to-brand-800 focus-visible:ring-brand-400',
+  secondary: 'bg-surface text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:ring-ink-300 focus-visible:ring-brand-300',
   ghost: 'text-ink-600 hover:bg-ink-900/[0.05] hover:text-ink-900 focus-visible:ring-brand-300',
-  danger: 'bg-white text-rose-600 ring-1 ring-inset ring-rose-200 hover:bg-rose-50 focus-visible:ring-rose-300',
-  gold: 'bg-gradient-to-b from-gold-300 to-gold-400 text-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_6px_16px_-8px_rgba(141,106,47,0.8)] hover:from-gold-400 hover:to-gold-500 focus-visible:ring-gold-300',
+  danger: 'bg-surface text-rose-600 ring-1 ring-inset ring-rose-200 hover:bg-rose-50 focus-visible:ring-rose-300',
+  gold: 'theme-light bg-gradient-to-b from-gold-300 to-gold-400 text-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_6px_16px_-8px_rgba(141,106,47,0.8)] hover:from-gold-400 hover:to-gold-500 focus-visible:ring-gold-300',
 }
 
 const sizes: Record<Size, string> = {
@@ -25,7 +25,7 @@ const sizes: Record<Size, string> = {
 }
 
 const base =
-  'inline-flex shrink-0 select-none items-center justify-center gap-2 font-semibold transition duration-200 ease-out active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-45'
+  'inline-flex shrink-0 select-none items-center justify-center gap-2 font-semibold transition duration-200 ease-out active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-45'
 
 export function buttonClass(variant: Variant = 'primary', size: Size = 'md', className = '') {
   return `${base} ${variants[variant]} ${sizes[size]} ${className}`

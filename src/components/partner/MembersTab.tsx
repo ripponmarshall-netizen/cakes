@@ -53,7 +53,7 @@ export function MembersTab({ ctx }: { ctx: PartnerCtx }) {
       {summary.former.length > 0 && (
         <section className="pt-3">
           <SectionTitle>Left the partner</SectionTitle>
-          <ul className="divide-y divide-ink-100 rounded-3xl bg-white/50 ring-1 ring-inset ring-ink-900/[0.06]">
+          <ul className="divide-y divide-ink-100 rounded-3xl bg-surface/50 ring-1 ring-inset ring-ink-900/[0.06]">
             {summary.former.map((f) => (
               <li key={f.member.id} className="flex items-center gap-3 px-4 py-3 text-sm">
                 <span className="opacity-60 grayscale">

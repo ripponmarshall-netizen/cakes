@@ -66,7 +66,7 @@ export function StatementModal({ ctx, m: liveM, onClose }: { ctx: PartnerCtx; m:
           <p className="eyebrow flex items-center gap-1.5">
             <Icon name="link" size={13} /> Their read-only link
           </p>
-          <p className="mt-2 break-all rounded-xl bg-white px-3 py-2 font-mono text-[11px] text-ink-600 ring-1 ring-inset ring-ink-200/70">{link}</p>
+          <p className="mt-2 break-all rounded-xl bg-surface px-3 py-2 font-mono text-[11px] text-ink-600 ring-1 ring-inset ring-ink-200/70">{link}</p>
           <p className="mt-1.5 text-xs text-ink-400">
             Shows only their own payments and draws
             {partner.share_schedule ? ', plus the full draw order with names' : ''}. Change that in partner settings.

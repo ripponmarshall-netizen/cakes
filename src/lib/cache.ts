@@ -22,10 +22,13 @@ export function writeCache(key: string, value: unknown) {
   }
 }
 
-/** Forget everything cached — called on sign-out so ledger data doesn't linger on the device. */
+/**
+ * Forget everything cached — called on sign-out so ledger data doesn't linger
+ * on the device. Display preferences (theme, last payment method) are kept.
+ */
 export function clearCache() {
   try {
-    for (const key of Object.keys(localStorage)) if (key.startsWith('pl:')) localStorage.removeItem(key)
+    for (const key of Object.keys(localStorage)) if (key.startsWith('pl:') && !key.startsWith(`${PREFIX}pref:`)) localStorage.removeItem(key)
   } catch {
     // ignore
   }

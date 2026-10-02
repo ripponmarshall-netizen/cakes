@@ -125,7 +125,7 @@ export function MemberModal({
                 type="button"
                 onClick={() => setHands(h)}
                 className={`min-w-[2.5rem] rounded-xl px-2 text-sm font-bold transition duration-200 ${
-                  Number(hands) === Number(h) ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-800'
+                  Number(hands) === Number(h) ? 'bg-raised text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-800'
                 }`}
               >
                 {formatHands(Number(h)).split(' ')[0]}

@@ -112,7 +112,7 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
                   slot.done
                     ? 'bg-brand-50 text-brand-700 ring-brand-600/10'
                     : isNow
-                      ? 'bg-white text-gold-700 ring-gold-400/40'
+                      ? 'bg-surface text-gold-700 ring-gold-400/40'
                       : 'bg-ink-50 text-ink-600 ring-ink-900/[0.05]'
                 }`}
               >

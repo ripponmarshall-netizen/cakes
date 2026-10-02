@@ -134,12 +134,12 @@ export function AuthScreen() {
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-[46vh] overflow-hidden rounded-b-[3rem] bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950" aria-hidden>
+      <div className="theme-light absolute inset-x-0 top-0 h-[46vh] overflow-hidden rounded-b-[3rem] bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950" aria-hidden>
         <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border-[26px] border-gold-300/[0.08]" />
         <div className="absolute -left-20 bottom-[-6rem] h-72 w-72 rounded-full bg-brand-400/10 blur-3xl" />
       </div>
       <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
-        <div className="animate-rise mb-7 text-center text-white">
+        <div className="theme-light animate-rise mb-7 text-center text-white">
           <div className="mb-4 flex justify-center">
             <Logo size={60} />
           </div>

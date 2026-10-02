@@ -1,3 +1,6 @@
+/** A colour defined as a CSS variable of RGB channels, so opacity modifiers work. */
+const v = (name) => `rgb(var(--${name}) / <alpha-value>)`
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -7,51 +10,25 @@ export default {
         sans: ['Manrope', 'system-ui', 'sans-serif'],
         display: ['Fraunces', 'Georgia', 'serif'],
       },
+      // Theme tokens live in src/index.css (light and dark sets).
       colors: {
-        // Warm ivory paper, deep forest emerald, brushed brass.
-        canvas: '#f3f0e8',
-        ink: {
-          50: '#f8f7f3',
-          100: '#efede6',
-          200: '#e0ddd3',
-          300: '#c3bfb2',
-          400: '#959083',
-          500: '#6e6a5f',
-          600: '#514e46',
-          700: '#3b3933',
-          800: '#272622',
-          900: '#181815',
-        },
-        brand: {
-          50: '#eef5f1',
-          100: '#d9eae1',
-          200: '#b3d4c4',
-          300: '#82b59d',
-          400: '#4f9177',
-          500: '#2f7259',
-          600: '#205c47',
-          700: '#184b3a',
-          800: '#123b2e',
-          900: '#0b2820',
-          950: '#071a15',
-        },
-        gold: {
-          50: '#fbf7ee',
-          100: '#f5ecd5',
-          200: '#ead6a8',
-          300: '#dcbd7b',
-          400: '#c9a258',
-          500: '#b0873d',
-          600: '#8d6a2f',
-          700: '#6c5125',
-        },
+        canvas: 'rgb(var(--canvas) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        // A selected pill on a sunken track: white in light, lifted grey in dark.
+        raised: 'rgb(var(--raised) / <alpha-value>)',
+        ink: { 50: v('ink-50'), 100: v('ink-100'), 200: v('ink-200'), 300: v('ink-300'), 400: v('ink-400'), 500: v('ink-500'), 600: v('ink-600'), 700: v('ink-700'), 800: v('ink-800'), 900: v('ink-900') },
+        brand: { 50: v('brand-50'), 100: v('brand-100'), 200: v('brand-200'), 300: v('brand-300'), 400: v('brand-400'), 500: v('brand-500'), 600: v('brand-600'), 700: v('brand-700'), 800: v('brand-800'), 900: v('brand-900'), 950: v('brand-950') },
+        gold: { 50: v('gold-50'), 100: v('gold-100'), 200: v('gold-200'), 300: v('gold-300'), 400: v('gold-400'), 500: v('gold-500'), 600: v('gold-600'), 700: v('gold-700') },
+        rose: { 50: v('rose-50'), 100: v('rose-100'), 200: v('rose-200'), 300: v('rose-300'), 400: v('rose-400'), 500: v('rose-500'), 600: v('rose-600'), 700: v('rose-700'), 800: v('rose-800'), 900: v('rose-900'), 950: v('rose-950') },
+        amber: { 50: v('amber-50'), 100: v('amber-100'), 200: v('amber-200'), 300: v('amber-300'), 400: v('amber-400'), 500: v('amber-500'), 600: v('amber-600'), 700: v('amber-700'), 800: v('amber-800'), 900: v('amber-900'), 950: v('amber-950') },
+        sky: { 50: v('sky-50'), 100: v('sky-100'), 200: v('sky-200'), 300: v('sky-300'), 400: v('sky-400'), 500: v('sky-500'), 600: v('sky-600'), 700: v('sky-700'), 800: v('sky-800'), 900: v('sky-900'), 950: v('sky-950') },
       },
       borderRadius: {
         '4xl': '2rem',
       },
       boxShadow: {
-        card: '0 1px 0 rgba(255,255,255,0.7) inset, 0 1px 2px rgba(24,24,21,0.04), 0 8px 24px -12px rgba(24,24,21,0.12)',
-        float: '0 2px 4px rgba(24,24,21,0.04), 0 16px 40px -16px rgba(24,24,21,0.22)',
+        card: 'var(--shadow-card)',
+        float: 'var(--shadow-float)',
         lift: '0 24px 60px -24px rgba(7,26,21,0.55)',
         glow: '0 0 0 4px rgba(201,162,88,0.18)',
       },

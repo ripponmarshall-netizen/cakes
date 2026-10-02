@@ -63,7 +63,7 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
                     rel="noreferrer"
                     onClick={() => setSent((s) => new Set(s).add(m.member.id))}
                     className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition duration-200 active:scale-95 ${
-                      done ? 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/15' : 'bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm hover:to-brand-800'
+                      done ? 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/15' : 'theme-light bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm hover:to-brand-800'
                     }`}
                   >
                     <Icon name={done ? 'check' : 'message'} size={15} /> {done ? 'Sent' : 'Send'}

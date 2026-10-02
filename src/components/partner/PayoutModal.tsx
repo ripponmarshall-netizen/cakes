@@ -140,7 +140,7 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
     >
       <form id="payout-form" onSubmit={submit} className="space-y-4 pb-2">
         {/* What they walk away with */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 p-5 text-white">
+        <div className="theme-light relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 p-5 text-white">
           <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full border-[14px] border-gold-300/10" aria-hidden />
           <p className="relative text-[11px] font-bold uppercase tracking-[0.14em] text-gold-200/90">{member.name} receives</p>
           <p className="num relative mt-1 font-display text-4xl font-semibold">{formatMoney(handOverC / 100)}</p>
@@ -160,7 +160,7 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
                 {monthsLabel(arrears.map((a) => a.period)).toLowerCase()}). Once they draw, anything unpaid is money the group can lose.
               </span>
             </p>
-            <label className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl bg-white/70 px-3 py-2.5 font-semibold ring-1 ring-inset ring-rose-200/60">
+            <label className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl bg-surface/70 px-3 py-2.5 font-semibold ring-1 ring-inset ring-rose-200/60">
               <input type="checkbox" checked={deduct} onChange={(e) => setDeduct(e.target.checked)} className="h-4 w-4 rounded accent-brand-700" />
               Take it out of this draw
             </label>

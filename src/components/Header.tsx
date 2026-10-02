@@ -4,10 +4,20 @@ import { Logo } from './Logo'
 import { Icon } from './ui/Icon'
 import { IconButton } from './ui/Button'
 import { useConfirm } from './ui/Confirm'
+import { useTheme, type ThemePref } from '../hooks/useTheme'
+import type { IconName } from './ui/Icon'
+
+const themeCycle: Record<ThemePref, { next: ThemePref; icon: IconName; label: string }> = {
+  system: { next: 'light', icon: 'monitor', label: 'Theme: follows your phone' },
+  light: { next: 'dark', icon: 'sun', label: 'Theme: light' },
+  dark: { next: 'system', icon: 'moon', label: 'Theme: dark' },
+}
 
 export function Header({ onHome }: { onHome?: () => void }) {
   const { profile, session, signOut } = useAuth()
   const confirm = useConfirm()
+  const theme = useTheme()
+  const themeState = themeCycle[theme.pref]
   const name = profile?.display_name ?? session?.user.email ?? 'You'
 
   async function askSignOut() {
@@ -44,8 +54,13 @@ export function Header({ onHome }: { onHome?: () => void }) {
               <Logo size={28} />
             </span>
           )}
+          <IconButton label={`${themeState.label} — tap to change`} onClick={() => theme.choose(themeState.next)}>
+            <span key={theme.pref} className="animate-pop-in">
+              <Icon name={themeState.icon} size={17} />
+            </span>
+          </IconButton>
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gold-200 to-gold-400 text-[11px] font-bold text-ink-900 ring-2 ring-white"
+            className="theme-light ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gold-200 to-gold-400 text-[11px] font-bold text-ink-900 ring-2 ring-surface"
             title={`Signed in as ${name}`}
           >
             {initials(name)}

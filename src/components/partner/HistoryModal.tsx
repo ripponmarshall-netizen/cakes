@@ -113,7 +113,7 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
             return (
               <li key={e.id} className="flex gap-3">
                 <span
-                  className={`relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-white ${
+                  className={`relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-surface ${
                     d.tone === 'bad' ? 'bg-rose-50 text-rose-600' : 'bg-ink-100 text-ink-500'
                   }`}
                 >
