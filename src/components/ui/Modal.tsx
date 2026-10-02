@@ -17,6 +17,30 @@ interface ModalProps {
 // one reacts to Escape, and the page stays scroll-locked until the last closes.
 const stack: symbol[] = []
 
+const focusable =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/** Keeps Tab and Shift+Tab cycling inside the open dialog instead of reaching the page behind it. */
+function trapFocus(e: KeyboardEvent, panel: HTMLElement | null) {
+  if (!panel) return
+  const items = [...panel.querySelectorAll<HTMLElement>(focusable)].filter((el) => el.offsetParent !== null || el === document.activeElement)
+  if (items.length === 0) {
+    e.preventDefault()
+    panel.focus()
+    return
+  }
+  const first = items[0]
+  const last = items[items.length - 1]
+  const active = document.activeElement
+  if (e.shiftKey && (active === first || active === panel || !panel.contains(active))) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && (active === last || !panel.contains(active))) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
 /** Bottom sheet on phones, centred card on larger screens. Animates in and out. */
 export function Modal({ open, onClose, title, subtitle, children, footer }: ModalProps) {
   const { mounted, leaving } = usePresence(open)
@@ -32,7 +56,13 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
     const returnTo = document.activeElement as HTMLElement | null
     stack.push(id)
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && stack[stack.length - 1] === id) closeRef.current()
+      if (stack[stack.length - 1] !== id) return
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        closeRef.current()
+      } else if (e.key === 'Tab') {
+        trapFocus(e, panel.current)
+      }
     }
     document.addEventListener('keydown', onKey)
     if (stack.length === 1) {

@@ -5,7 +5,6 @@ import { formatMoney, monthsLabel } from '../../lib/format'
 import { normalizePhone, reminderMessage, waLink } from '../../lib/whatsapp'
 import { useAuth } from '../../context/AuthContext'
 import { Modal } from '../ui/Modal'
-import { Badge } from '../ui/Badge'
 import { Icon } from '../ui/Icon'
 import { Avatar, type PartnerCtx } from './shared'
 
@@ -49,10 +48,9 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
                 <li key={m.member.id} className="flex items-center gap-3 px-4 py-3">
                   <Avatar name={m.member.name} id={m.member.id} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="flex min-w-0 items-center gap-1.5 font-bold text-ink-900">
-                      <span className="truncate">{m.member.name}</span> {m.risk === 'high' && <Badge tone="red">Drew already</Badge>}
-                    </p>
-                    <p className="num text-xs text-ink-500">
+                    <p className="truncate font-bold text-ink-900">{m.member.name}</p>
+                    <p className="num text-xs leading-relaxed text-ink-500">
+                      {m.risk === 'high' && <span className="font-semibold text-rose-600">Drew already · </span>}
                       {formatMoney(m.behind)} · {monthsLabel(months).toLowerCase()}
                       {!hasPhone && <span className="text-amber-600"> · no phone saved</span>}
                     </p>

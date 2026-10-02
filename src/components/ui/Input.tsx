@@ -15,7 +15,7 @@ export function Field({ label, hint, children }: { label: string; hint?: ReactNo
 }
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`${fieldBase} ${props.className ?? ''}`} />
+  return <input {...props} className={`${fieldBase} h-12 ${props.className ?? ''}`} />
 }
 
 /** Number input with a "J$" prefix. */
@@ -23,7 +23,7 @@ export function MoneyInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, 't
   return (
     <div className="relative">
       <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm font-bold text-ink-400">J$</span>
-      <input type="number" inputMode="decimal" step="0.01" min="0" {...props} className={`${fieldBase} num pl-11 font-semibold ${props.className ?? ''}`} />
+      <input type="number" inputMode="decimal" step="0.01" min="0" {...props} className={`${fieldBase} num h-12 pl-11 font-semibold ${props.className ?? ''}`} />
     </div>
   )
 }
@@ -35,7 +35,7 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className="relative">
-      <select {...props} className={`${fieldBase} appearance-none pr-10 ${props.className ?? ''}`} />
+      <select {...props} className={`${fieldBase} h-12 appearance-none py-0 pr-10 ${props.className ?? ''}`} />
       <Icon name="chevron-down" size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
     </div>
   )
@@ -117,7 +117,16 @@ export function Segmented<T extends string>({
           type="button"
           role="tab"
           aria-selected={value === o.value}
+          tabIndex={value === o.value ? 0 : -1}
           onClick={() => onChange(o.value)}
+          onKeyDown={(e) => {
+            const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+            if (!step) return
+            e.preventDefault()
+            const next = options[(index + step + options.length) % options.length]
+            onChange(next.value)
+            ;(wrap.current?.children[options.indexOf(next) + 1] as HTMLElement | undefined)?.focus()
+          }}
           className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${
             size === 'lg' ? 'py-2.5 text-sm' : 'py-2 text-[13px]'
           } ${value === o.value ? 'text-ink-900' : 'text-ink-500 hover:text-ink-700'}`}

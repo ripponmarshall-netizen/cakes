@@ -56,7 +56,7 @@ export function formatHands(hands: number): string {
   const whole = Math.floor(n)
   const half = n - whole === 0.5
   const body = whole === 0 ? (half ? '½' : '0') : `${whole}${half ? '½' : ''}`
-  return `${body} ${n <= 1 ? 'hand' : 'hands'}`
+  return `${body} ${n > 0 && n <= 1 ? 'hand' : 'hands'}`
 }
 
 export const methodLabels: Record<PaymentMethod, string> = {

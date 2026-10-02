@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { initials } from '../lib/format'
 import { Logo } from './Logo'
@@ -6,6 +7,7 @@ import { IconButton } from './ui/Button'
 import { useConfirm } from './ui/Confirm'
 import { useTheme, type ThemePref } from '../hooks/useTheme'
 import type { IconName } from './ui/Icon'
+import { OfflineBanner } from './OfflineBanner'
 
 const themeCycle: Record<ThemePref, { next: ThemePref; icon: IconName; label: string }> = {
   system: { next: 'light', icon: 'monitor', label: 'Theme: follows your phone' },
@@ -19,6 +21,24 @@ export function Header({ onHome }: { onHome?: () => void }) {
   const theme = useTheme()
   const themeState = themeCycle[theme.pref]
   const name = profile?.display_name ?? session?.user.email ?? 'You'
+  const ref = useRef<HTMLElement>(null)
+
+  // Sticky bits further down (the partner tab bar) sit under the header. Its
+  // height changes with the notch (safe area) and the offline banner, so it's
+  // published as --header-h rather than hard-coded.
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const root = document.documentElement
+    const publish = () => root.style.setProperty('--header-h', `${el.offsetHeight}px`)
+    publish()
+    const ro = new ResizeObserver(publish)
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      root.style.removeProperty('--header-h')
+    }
+  }, [])
 
   async function askSignOut() {
     const ok = await confirm({
@@ -30,7 +50,7 @@ export function Header({ onHome }: { onHome?: () => void }) {
   }
 
   return (
-    <header className="pt-safe sticky top-0 z-30 border-b border-ink-900/[0.06] bg-canvas/75 backdrop-blur-xl backdrop-saturate-150">
+    <header ref={ref} className="pt-safe px-safe sticky top-0 z-30 border-b border-ink-900/[0.06] bg-canvas/75 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
         {onHome ? (
           <button
@@ -70,6 +90,7 @@ export function Header({ onHome }: { onHome?: () => void }) {
           </IconButton>
         </div>
       </div>
+      <OfflineBanner />
     </header>
   )
 }

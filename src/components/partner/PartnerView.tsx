@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePartnerData } from '../../hooks/usePartnerData'
 import { summarizePartner, type DrawShare } from '../../lib/calc'
 import { formatDate, formatHands, formatMoney, periodLabel } from '../../lib/format'
@@ -35,6 +35,17 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
     [partner, members, contributions, payouts],
   )
 
+  // The partner's name in the browser tab and the app switcher.
+  const name = partner?.name
+  useEffect(() => {
+    if (!name) return
+    const before = document.title
+    document.title = `${name} · Partner Ledger`
+    return () => {
+      document.title = before
+    }
+  }, [name])
+
   if (loading && !partner) return <PageSkeleton />
   if (!partner || !summary) {
     return (
@@ -51,13 +62,17 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
   const nextShares = next ? next.shares.filter((s) => !s.payout) : []
   const behindCount = summary.members.filter((m) => m.behind > 0).length
   const progress = Math.max(0, Math.min(1, summary.rawPeriod / partner.term_months))
+  // Counted in draw slots (two half hands share one), matching the Draws tab.
+  const drawsDone = summary.schedule.filter((s) => s.done).length
 
   function openTab(t: Tab) {
     setTab(t)
     // If the tab bar is pinned under the header, bring the new tab's top into view.
     const el = tabBar.current
-    if (el && el.getBoundingClientRect().top <= 72) {
-      window.scrollTo({ top: el.offsetTop - 64, behavior: 'smooth' })
+    if (!el) return
+    const header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 64
+    if (el.getBoundingClientRect().top <= header + 8) {
+      window.scrollTo({ top: el.offsetTop - header, behavior: 'smooth' })
     }
   }
 
@@ -114,9 +129,9 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
           <div className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-200 transition-[width] duration-1000 ease-out" style={{ width: `${progress * 100}%` }} />
         </div>
 
-        <div className="relative mt-5 grid grid-cols-3 gap-3">
+        <div className="relative mt-5 grid grid-cols-3 gap-2 sm:gap-3">
           <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)}`} />
-          <HeroStat label="Paid out" value={summary.paidOutNet} sub={`${summary.payoutsCount} of ${summary.drawsCount} draws`} />
+          <HeroStat label="Paid out" value={summary.paidOutNet} sub={`${drawsDone} of ${summary.schedule.length} draws`} />
           <HeroStat label="Your fees" value={summary.feesEarned} sub={`of ${formatMoney(summary.feesProjected)}`} />
         </div>
       </section>
@@ -200,7 +215,7 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
       )}
 
       {/* Tabs */}
-      <div ref={tabBar} className="sticky top-16 z-20 -mx-4 bg-canvas/80 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6">
+      <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 bg-canvas/85 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <Segmented
           size="lg"
           value={activeTab}
@@ -263,10 +278,10 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
 
 function HeroStat({ label, value, sub }: { label: string; value: number; sub: string }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-white/[0.06] px-2.5 py-2.5 ring-1 ring-inset ring-white/[0.08] sm:px-3.5">
+    <div className="min-w-0 rounded-2xl bg-white/[0.06] px-2 py-2.5 ring-1 ring-inset ring-white/[0.08] sm:px-3.5">
       <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand-200/80">{label}</p>
       <AnimatedMoney value={value} className="mt-0.5 block truncate text-[13.5px] font-bold tracking-tight sm:text-lg" />
-      <p className="num truncate text-[10.5px] text-brand-100/60 sm:text-[11px]">{sub}</p>
+      <p className="num truncate text-[10.5px] tracking-tight text-brand-100/60 sm:text-[11px] sm:tracking-normal">{sub}</p>
     </div>
   )
 }

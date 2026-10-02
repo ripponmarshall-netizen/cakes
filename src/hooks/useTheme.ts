@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { readCache, writeCache } from '../lib/cache'
 
 export type ThemePref = 'system' | 'light' | 'dark'
@@ -28,7 +29,14 @@ export function useTheme() {
 
   const choose = useCallback((next: ThemePref) => {
     writeCache(KEY, next)
-    setPref(next)
+    const swap = () => {
+      apply(next)
+      flushSync(() => setPref(next))
+    }
+    // Cross-fade the whole page between themes where the browser can.
+    const doc = document as Document & { startViewTransition?: (update: () => void) => unknown }
+    if (doc.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) doc.startViewTransition(swap)
+    else swap()
   }, [])
 
   return { pref, choose }

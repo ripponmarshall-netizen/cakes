@@ -133,6 +133,11 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
+  /* Landscape iPhones: keep content clear of the notch and rounded corners. */
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
   .pb-safe {
     padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
   }
@@ -144,9 +149,23 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
+    /* Looping animations (ping, shimmer) would otherwise strobe at 0.01ms. */
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* A slow spin still says "working" without the motion being a problem. */
+  .animate-spin {
+    animation-duration: 1.5s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Theme switch cross-fade (useTheme). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.35s;
+  animation-timing-function: ease-out;
 }
 
 /* Printing a statement: show only the element marked .print-area. */
