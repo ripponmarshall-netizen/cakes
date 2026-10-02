@@ -5,12 +5,24 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
   }
 
   body {
     @apply min-h-screen bg-canvas font-sans text-ink-800;
+    /* A soft wash of light at the top so the page doesn't read as flat beige. */
+    background-image:
+      radial-gradient(120% 60% at 50% -10%, rgba(255, 255, 255, 0.85), transparent 60%),
+      radial-gradient(60% 40% at 100% 0%, rgba(201, 162, 88, 0.08), transparent 70%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(201, 162, 88, 0.3);
   }
 
   input[type='number']::-webkit-inner-spin-button,
@@ -21,24 +33,47 @@
   input[type='number'] {
     -moz-appearance: textfield;
   }
+
+  :focus-visible {
+    outline: none;
+  }
+}
+
+@layer components {
+  /* The one surface every card sits on. */
+  .card {
+    @apply rounded-3xl bg-white shadow-card ring-1 ring-ink-900/[0.04];
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.12em] text-ink-400;
+  }
+
+  /* Rows and tiles that respond to touch. */
+  .pressable {
+    @apply transition duration-200 ease-out active:scale-[0.985];
+  }
+
+  .skeleton {
+    @apply rounded-xl;
+    background: linear-gradient(90deg, #ebe8df 0%, #f5f3ed 50%, #ebe8df 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
 }
 
 @layer utilities {
   .num {
     font-variant-numeric: tabular-nums;
   }
-  .animate-rise {
-    animation: rise 0.22s ease-out;
+  .font-display {
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
   }
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Children fade up one after another; set --i on each child. */
+  .stagger > * {
+    animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: calc(min(var(--i, 0), 12) * 40ms);
   }
   .scrollbar-none {
     scrollbar-width: none;
@@ -46,10 +81,30 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Printing a statement: show only the element marked .print-area. */
 @media print {
+  body {
+    background: white;
+  }
   body * {
     visibility: hidden;
   }
@@ -64,5 +119,26 @@
   }
   @page {
     margin: 14mm;
+  }
+}
+
+/* Referenced from plain CSS above, so defined here too (Tailwind only emits
+   keyframes for animate-* classes it sees). */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
   }
 }

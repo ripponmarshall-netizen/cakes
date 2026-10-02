@@ -5,16 +5,18 @@ import { statementMessage, waLink } from '../../lib/whatsapp'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
 import { Modal } from '../ui/Modal'
-import { Button } from '../ui/Button'
+import { Button, LinkButton } from '../ui/Button'
 import { Icon } from '../ui/Icon'
 import { StatementView } from './StatementView'
 import type { PartnerCtx } from './shared'
+import { useLast } from '../../hooks/usePresence'
 
 /** Printable statement plus the member's read-only link: share, copy or reset it. */
-export function StatementModal({ ctx, m, onClose }: { ctx: PartnerCtx; m: MemberSummary | null; onClose: () => void }) {
+export function StatementModal({ ctx, m: liveM, onClose }: { ctx: PartnerCtx; m: MemberSummary | null; onClose: () => void }) {
   const { partner, members, contributions, summary, refresh } = ctx
   const { toast } = useToast()
   const confirm = useConfirm()
+  const m = useLast(liveM)
   if (!m) return null
 
   const owner = ownerResolver(members)
@@ -46,30 +48,25 @@ export function StatementModal({ ctx, m, onClose }: { ctx: PartnerCtx; m: Member
   }
 
   return (
-    <Modal open onClose={onClose} title="Statement">
+    <Modal open={!!liveM} onClose={onClose} title="Statement" subtitle={m.member.name}>
       <div className="print-area">
         <StatementView partner={partner} summary={summary} m={m} payments={payments} names={names} showSchedule={partner.share_schedule} />
       </div>
 
-      <div className="mt-6 space-y-3 border-t border-ink-100 pt-5 print:hidden">
+      <div className="mt-6 space-y-3 border-t border-ink-100 pb-2 pt-5 print:hidden">
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => window.print()}>
             <Icon name="printer" size={16} /> Print / PDF
           </Button>
-          <a
-            href={waLink(m.member.phone, statementMessage(partner, m, link))}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-800"
-          >
+          <LinkButton variant="primary" href={waLink(m.member.phone, statementMessage(partner, m, link))} target="_blank" rel="noreferrer">
             <Icon name="message" size={16} /> WhatsApp
-          </a>
+          </LinkButton>
         </div>
-        <div className="rounded-2xl bg-ink-50 p-3.5">
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink-400">
+        <div className="rounded-2xl bg-ink-50/80 p-4 ring-1 ring-inset ring-ink-900/[0.04]">
+          <p className="eyebrow flex items-center gap-1.5">
             <Icon name="link" size={13} /> Their read-only link
           </p>
-          <p className="mt-1 break-all text-xs text-ink-500">{link}</p>
+          <p className="mt-2 break-all rounded-xl bg-white px-3 py-2 font-mono text-[11px] text-ink-600 ring-1 ring-inset ring-ink-200/70">{link}</p>
           <p className="mt-1.5 text-xs text-ink-400">
             Shows only their own payments and draws
             {partner.share_schedule ? ', plus the full draw order with names' : ''}. Change that in partner settings.

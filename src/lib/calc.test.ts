@@ -334,6 +334,20 @@ describe('voids, replacements and risk', () => {
     expect(s.former[0].refunded).toBe(10000)
   })
 
+  it('keeps a replacement in the old member’s draw seat when the order was never saved', () => {
+    const a = { ...member('a', 1, 1), replaced_by: 'n', transfer_mode: 'buyout' as const }
+    const members = [a, member('b', 1, 2), member('c', 1, 3), member('n', 1, 5)]
+    const order = effectiveDrawOrder(members, []).map((s) => s.ids.join('|'))
+    expect(order).toEqual(['n', 'b', 'c'])
+  })
+
+  it('reads a stale id in the saved order as the member who took the seat', () => {
+    const a = { ...member('a', 1, 1), replaced_by: 'n', transfer_mode: 'refund' as const }
+    const members = [a, member('b', 1, 2), member('c', 1, 3), member('n', 1, 5)]
+    const order = effectiveDrawOrder(members, ['c', 'a', 'b']).map((s) => s.ids.join('|'))
+    expect(order).toEqual(['c', 'n', 'b'])
+  })
+
   it('flags members who drew and still owe', () => {
     const members = [member('a', 1, 1), member('b', 1, 2), member('c', 1, 3), member('d', 1, 4)]
     const contributions = [

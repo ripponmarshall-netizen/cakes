@@ -87,50 +87,59 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
     setBusy(null)
   }
 
+  const isCurrent = summary.status === 'active' && current === summary.period
+
   return (
     <div className="space-y-4">
       {/* Month picker + progress */}
-      <div className="rounded-2xl bg-white p-4 shadow-card">
+      <div className="card p-5">
         <div className="flex items-center justify-between gap-2">
-          <IconButton label="Previous month" onClick={() => setPeriod(current - 1)} disabled={current <= 1}>
+          <IconButton label="Previous month" onClick={() => setPeriod(current - 1)} disabled={current <= 1} className="bg-ink-50 ring-1 ring-inset ring-ink-900/[0.05]">
             <Icon name="chevron-left" size={20} />
           </IconButton>
-          <div className="text-center">
-            <p className="font-extrabold text-ink-900">
-              Month {current} <span className="font-semibold text-ink-400">· {periodLabel(partner.start_date, current)}</span>
+          <div key={current} className="animate-fade min-w-0 text-center">
+            <p className="eyebrow">
+              {when} · Month {current} of {T}
             </p>
-            <p className="text-xs font-semibold text-ink-400">
-              {when} · from {periodDay(partner.start_date, current)}
-            </p>
+            <p className="mt-0.5 font-display text-2xl font-semibold text-ink-900">{periodLabel(partner.start_date, current)}</p>
+            <p className="text-xs text-ink-400">due from {periodDay(partner.start_date, current)}</p>
           </div>
-          <IconButton label="Next month" onClick={() => setPeriod(current + 1)} disabled={current >= T}>
+          <IconButton label="Next month" onClick={() => setPeriod(current + 1)} disabled={current >= T} className="bg-ink-50 ring-1 ring-inset ring-ink-900/[0.05]">
             <Icon name="chevron-right" size={20} />
           </IconButton>
         </div>
 
-        <div className="mt-4">
-          <div className="mb-1.5 flex items-baseline justify-between text-sm">
-            <span className="num font-bold text-ink-800">
+        <div className="mt-5">
+          <div className="mb-2 flex items-baseline justify-between gap-3 text-sm">
+            <span className="num font-bold text-ink-900">
               {formatMoney(paid)} <span className="font-medium text-ink-400">of {formatMoney(due)}</span>
             </span>
-            <span className="text-xs font-semibold text-ink-500">
-              {paidCount} of {rows.length} paid
+            <span className={`text-xs font-bold ${paidCount === rows.length ? 'text-brand-600' : 'text-ink-500'}`}>
+              {paidCount === rows.length ? (
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="check" size={13} /> All paid
+                </span>
+              ) : (
+                <>
+                  {paidCount} of {rows.length} paid
+                </>
+              )}
             </span>
           </div>
           <ProgressBar value={due ? paid / due : 0} />
         </div>
 
         {draws.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-ink-100 pt-3 text-xs text-ink-500">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-ink-100 pt-3.5 text-xs text-ink-500">
             <Icon name="gift" size={14} className="text-gold-500" />
-            <span className="font-semibold">Drawing:</span>
+            <span className="mr-0.5 font-semibold">Drawing this month</span>
             {draws.map((d) => {
               const m = members.find((x) => x.id === d.memberId)
               return (
                 <Badge key={`${d.slotIndex}-${d.memberId}`} tone={d.payout ? 'green' : 'gold'}>
                   {m?.name ?? '—'}
                   {d.half && ' (½)'}
-                  {d.payout && <Icon name="check" size={12} />}
+                  {d.payout && <Icon name="check" size={11} />}
                 </Badge>
               )
             })}
@@ -138,27 +147,36 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
         )}
       </div>
 
-      {open.length > 1 && (
-        <div className="flex justify-end">
-          <Button variant="secondary" size="sm" onClick={payAll} loading={busy === 'all'}>
-            <Icon name="check" size={16} /> Mark all paid
-          </Button>
+      {(!isCurrent && summary.status === 'active') || open.length > 1 ? (
+        <div className="flex items-center justify-between gap-2">
+          {!isCurrent && summary.status === 'active' ? (
+            <Button variant="ghost" size="sm" onClick={() => setPeriod(summary.period)}>
+              <Icon name="calendar" size={15} /> Back to this month
+            </Button>
+          ) : (
+            <span />
+          )}
+          {open.length > 1 && (
+            <Button variant="secondary" size="sm" onClick={payAll} loading={busy === 'all'}>
+              <Icon name="check" size={15} /> Mark all paid
+            </Button>
+          )}
         </div>
-      )}
+      ) : null}
 
       {/* Member rows */}
-      <ul className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white shadow-card">
-        {rows.map((r) => (
-          <li key={r.member.id} className="flex items-center gap-3 px-4 py-3">
+      <ul key={current} className="card stagger divide-y divide-ink-100/80 overflow-hidden">
+        {rows.map((r, i) => (
+          <li key={r.member.id} style={{ ['--i' as string]: i }} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-ink-50/50 sm:px-5">
             <button type="button" onClick={() => setOpenRow(r.member.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
               <Avatar name={r.member.name} id={r.member.id} />
               <div className="min-w-0">
-                <p className="truncate font-bold text-ink-900">{r.member.name}</p>
+                <p className="truncate text-[15px] font-bold text-ink-900">{r.member.name}</p>
                 <p className="num text-xs text-ink-500">
                   {Number(r.member.hands) !== 1 && <>{formatHands(r.member.hands)} · </>}
                   {r.status === 'partial' ? (
                     <>
-                      <span className="font-semibold text-amber-600">{formatMoney(r.remaining)} left</span> of {formatMoney(r.due)}
+                      <span className="font-semibold text-amber-700">{formatMoney(r.remaining)} left</span> of {formatMoney(r.due)}
                     </>
                   ) : (
                     formatMoney(r.due)
@@ -167,10 +185,13 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
               </div>
             </button>
             {r.status === 'paid' ? (
-              <button type="button" onClick={() => setOpenRow(r.member.id)}>
-                <Badge tone="green">
-                  <Icon name="check" size={12} /> Paid
-                </Badge>
+              <button type="button" onClick={() => setOpenRow(r.member.id)} className="animate-pop-in" aria-label={`${r.member.name}: paid — see details`}>
+                <span className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-50 px-3 text-[13px] font-bold text-brand-700 ring-1 ring-inset ring-brand-600/15">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-white">
+                    <Icon name="check" size={10} strokeWidth={3} />
+                  </span>
+                  Paid
+                </span>
               </button>
             ) : (
               <div className="flex items-center gap-1">
@@ -184,7 +205,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     rel="noreferrer"
                     aria-label={`Remind ${r.member.name} on WhatsApp`}
                     title="Remind on WhatsApp"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-brand-50 hover:text-brand-700"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-brand-50 hover:text-brand-700 active:scale-90"
                   >
                     <Icon name="message" size={17} />
                   </a>
@@ -197,6 +218,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
           </li>
         ))}
       </ul>
+      <p className="px-1 text-center text-xs text-ink-400">Tap a name for part payments, method, reference and voids.</p>
 
       <ContributionModal ctx={ctx} row={selected} period={current} onClose={() => setOpenRow(null)} />
     </div>

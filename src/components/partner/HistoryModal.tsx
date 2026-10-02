@@ -22,6 +22,7 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
     if (!open) return
     let active = true
     setEntries(null)
+    setError(null)
     Promise.all([
       supabase.from('audit_log').select('*').eq('partner_id', partner.id).order('at', { ascending: false }).limit(300),
       supabase.from('profiles').select('id, display_name'),
@@ -37,7 +38,6 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
     }
   }, [open, partner.id])
 
-  if (!open) return null
   const memberName = (id: unknown) => members.find((m) => m.id === id)?.name ?? 'a former member'
 
   function describe(e: AuditEntry): { icon: IconName; text: string; detail?: string; tone?: 'bad' } | null {
@@ -98,7 +98,7 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
   }
 
   return (
-    <Modal open onClose={onClose} title="History" subtitle="Every change, newest first. Kept by the database — it can’t be edited.">
+    <Modal open={open} onClose={onClose} title="History" subtitle="Every change, newest first. Kept by the database — it can’t be edited.">
       {error ? (
         <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
       ) : !entries ? (
@@ -106,13 +106,17 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
       ) : entries.length === 0 ? (
         <p className="py-6 text-center text-sm text-ink-500">Nothing recorded yet.</p>
       ) : (
-        <ol className="space-y-3">
+        <ol className="relative space-y-4 pb-2 before:absolute before:bottom-3 before:left-[15px] before:top-3 before:w-px before:bg-ink-100">
           {entries.map((e) => {
             const d = describe(e)
             if (!d) return null
             return (
               <li key={e.id} className="flex gap-3">
-                <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${d.tone === 'bad' ? 'bg-rose-50 text-rose-600' : 'bg-ink-100 text-ink-500'}`}>
+                <span
+                  className={`relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-white ${
+                    d.tone === 'bad' ? 'bg-rose-50 text-rose-600' : 'bg-ink-100 text-ink-500'
+                  }`}
+                >
                   <Icon name={d.icon} size={14} />
                 </span>
                 <div className="min-w-0 flex-1">
