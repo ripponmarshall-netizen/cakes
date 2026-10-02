@@ -9,7 +9,6 @@
     text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
-    scrollbar-gutter: stable;
   }
 
   body {

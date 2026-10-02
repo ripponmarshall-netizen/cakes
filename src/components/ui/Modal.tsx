@@ -35,7 +35,12 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
       if (e.key === 'Escape' && stack[stack.length - 1] === id) closeRef.current()
     }
     document.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
+    if (stack.length === 1) {
+      // Hold the page still: hiding the scrollbar would otherwise shift it sideways.
+      const gap = window.innerWidth - document.documentElement.clientWidth
+      document.body.style.overflow = 'hidden'
+      if (gap > 0) document.body.style.paddingRight = `${gap}px`
+    }
     // Focus the first field the dialog asked for, else the dialog itself.
     requestAnimationFrame(() => {
       const el = panel.current
@@ -44,7 +49,10 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
     return () => {
       document.removeEventListener('keydown', onKey)
       stack.splice(stack.indexOf(id), 1)
-      if (stack.length === 0) document.body.style.overflow = ''
+      if (stack.length === 0) {
+        document.body.style.overflow = ''
+        document.body.style.paddingRight = ''
+      }
       returnTo?.focus?.({ preventScroll: true })
     }
   }, [open])

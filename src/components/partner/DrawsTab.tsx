@@ -5,7 +5,6 @@ import { formatDate, formatMoney, formatShortDate, periodLabel, plural } from '.
 import type { Member, Payout } from '../../lib/types'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
-import { Badge } from '../ui/Badge'
 import { Button, IconButton } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { Icon } from '../ui/Icon'
@@ -186,11 +185,12 @@ function ShareRow({
   const multi = Number(member.hands) > 1
   return (
     <div className="flex items-center gap-3">
-      <Avatar name={member.name} id={member.id} size="sm" />
+      <span className="hidden sm:block">
+        <Avatar name={member.name} id={member.id} size="sm" />
+      </span>
       <div className="min-w-0 flex-1">
         <p className="flex min-w-0 items-center gap-1.5 text-[15px] font-bold text-ink-900">
           <span className="truncate">{member.name}</span>
-          {share.half && <Badge tone="blue">½</Badge>}
           {multi && !share.half && <span className="shrink-0 text-xs font-medium text-ink-400">hand {share.handNo}</span>}
         </p>
         <p className="text-xs text-ink-500">
@@ -201,9 +201,10 @@ function ShareRow({
           ) : (
             <>
               <span className="num">{formatMoney(share.net)}</span>
+              {share.half && <span className="font-semibold text-sky-700"> · ½ hand</span>}
               {status === 'overdue' && <span className="font-semibold text-rose-600"> · overdue</span>}
               {status === 'now' && <span className="font-semibold text-gold-700"> · this month</span>}
-              {lone && <span className="text-ink-400"> · waiting for a half-hand partner</span>}
+              {lone && <span className="text-ink-400"> · no partner yet</span>}
             </>
           )}
         </p>

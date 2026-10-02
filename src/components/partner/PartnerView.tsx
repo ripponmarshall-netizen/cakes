@@ -115,7 +115,7 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
         </div>
 
         <div className="relative mt-5 grid grid-cols-3 gap-3">
-          <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)} due`} />
+          <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)}`} />
           <HeroStat label="Paid out" value={summary.paidOutNet} sub={`${summary.payoutsCount} of ${summary.drawsCount} draws`} />
           <HeroStat label="Your fees" value={summary.feesEarned} sub={`of ${formatMoney(summary.feesProjected)}`} />
         </div>
@@ -263,10 +263,10 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
 
 function HeroStat({ label, value, sub }: { label: string; value: number; sub: string }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-white/[0.06] px-3 py-2.5 ring-1 ring-inset ring-white/[0.08]">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-200/80">{label}</p>
-      <AnimatedMoney value={value} className="mt-0.5 block truncate text-[15px] font-bold sm:text-lg" />
-      <p className="num truncate text-[11px] text-brand-100/60">{sub}</p>
+    <div className="min-w-0 rounded-2xl bg-white/[0.06] px-2.5 py-2.5 ring-1 ring-inset ring-white/[0.08] sm:px-3.5">
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand-200/80">{label}</p>
+      <AnimatedMoney value={value} className="mt-0.5 block truncate text-[13.5px] font-bold tracking-tight sm:text-lg" />
+      <p className="num truncate text-[10.5px] text-brand-100/60 sm:text-[11px]">{sub}</p>
     </div>
   )
 }

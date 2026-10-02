@@ -98,9 +98,13 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-          <h1 className="mt-1 truncate font-display text-[1.9rem] font-semibold leading-tight text-ink-900 sm:text-4xl">
+          <h1 className="mt-1 font-display text-[1.9rem] font-semibold leading-[1.15] text-ink-900 sm:text-4xl">
             {greeting()}
-            {name && <span className="text-ink-400">, {name}</span>}
+            {name && (
+              <>
+                <span className="text-ink-400">,</span> <span className="text-ink-400">{name}</span>
+              </>
+            )}
           </h1>
         </div>
         {rows.length > 0 && (
@@ -163,7 +167,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
             <div className="relative mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
               <HeroStat label="Owed now" value={totals.behind} tone={totals.behind > 0 ? 'warn' : undefined} />
               <HeroStat label="At risk" value={totals.exposure} tone={totals.exposure > 0 ? 'bad' : undefined} />
-              <HeroStat label="Your fees" value={totals.feesEarned} sub={`${formatMoney(totals.feesProjected - totals.feesEarned)} to come`} />
+              <HeroStat label="Your fees" value={totals.feesEarned} sub={`+${formatMoney(totals.feesProjected - totals.feesEarned)}`} />
             </div>
           </section>
 
@@ -183,13 +187,14 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
                       onClick={() => onOpen(partner.id)}
                       id={share.memberId}
                       name={member?.name ?? '—'}
-                      sub={`${partner.name} · ${periodLabel(partner.start_date, share.period)}${share.half ? ' · ½ hand' : ''}`}
-                      right={
+                      sub={
                         <>
-                          {overdue && <Badge tone="red">Overdue</Badge>}
-                          <span className="num text-sm font-bold text-brand-700">{formatMoney(share.net)}</span>
+                          {overdue && <span className="font-semibold text-rose-600">Overdue · </span>}
+                          {partner.name} · {periodLabel(partner.start_date, share.period)}
+                          {share.half ? ' · ½ hand' : ''}
                         </>
                       }
+                      right={<span className="num text-sm font-bold text-brand-700">{formatMoney(share.net)}</span>}
                     />
                   ))}
                 </AttentionGroup>
@@ -203,13 +208,13 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
                       onClick={() => onOpen(partner.id)}
                       id={m.member.id}
                       name={m.member.name}
-                      sub={partner.name}
-                      right={
+                      sub={
                         <>
-                          {m.risk === 'high' && <Badge tone="red">Drew already</Badge>}
-                          <span className="num text-sm font-bold text-rose-700">{formatMoney(m.behind)}</span>
+                          {m.risk === 'high' && <span className="font-semibold text-rose-600">Drew already · </span>}
+                          {partner.name}
                         </>
                       }
+                      right={<span className="num text-sm font-bold text-rose-700">{formatMoney(m.behind)}</span>}
                     />
                   ))}
                   {owing.length > 8 && (
@@ -283,7 +288,7 @@ function AttentionGroup({ icon, title, tone, children }: { icon: IconName; title
   )
 }
 
-function AttentionRow({ id, name, sub, right, onClick }: { id: string; name: string; sub: string; right: React.ReactNode; onClick: () => void }) {
+function AttentionRow({ id, name, sub, right, onClick }: { id: string; name: string; sub: React.ReactNode; right: React.ReactNode; onClick: () => void }) {
   return (
     <li>
       <button type="button" onClick={onClick} className="group flex w-full items-center gap-3 px-5 py-2.5 text-left transition hover:bg-ink-50/80 active:bg-ink-100/60">

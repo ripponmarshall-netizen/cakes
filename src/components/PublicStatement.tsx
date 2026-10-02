@@ -6,7 +6,7 @@ import { StatementView } from './partner/StatementView'
 import { Logo } from './Logo'
 import { Button } from './ui/Button'
 import { Icon } from './ui/Icon'
-import { Spinner } from './ui/Spinner'
+import { Skeleton } from './ui/Skeleton'
 
 interface StatementPayload {
   member_id: string
@@ -51,11 +51,11 @@ export function PublicStatement({ token }: { token: string }) {
 
   return (
     <div className="min-h-screen pb-16">
-      <header className="border-b border-ink-100 bg-canvas/85 print:hidden">
+      <header className="pt-safe sticky top-0 z-30 border-b border-ink-900/[0.06] bg-canvas/75 backdrop-blur-xl print:hidden">
         <div className="mx-auto flex h-16 max-w-2xl items-center justify-between gap-3 px-4">
           <span className="flex items-center gap-2.5">
             <Logo size={30} />
-            <span className="text-[15px] font-extrabold tracking-tight text-ink-900">Partner statement</span>
+            <span className="font-display text-[17px] font-semibold text-ink-900">Your statement</span>
           </span>
           {view && (
             <Button size="sm" variant="secondary" onClick={() => window.print()}>
@@ -66,15 +66,21 @@ export function PublicStatement({ token }: { token: string }) {
       </header>
       <main className="mx-auto max-w-2xl px-4 py-6">
         {data === undefined ? (
-          <Spinner />
+          <div className="space-y-4" aria-busy="true">
+            <Skeleton className="h-28 rounded-3xl" />
+            <Skeleton className="h-24 rounded-3xl" />
+            <Skeleton className="h-64 rounded-3xl" />
+          </div>
         ) : !view ? (
-          <div className="rounded-3xl bg-white p-7 text-center shadow-card">
-            <Icon name="link" size={28} className="mx-auto text-ink-300" />
-            <h1 className="mt-3 text-lg font-bold text-ink-900">This link doesn’t work</h1>
-            <p className="mt-1 text-sm text-ink-500">{error ?? 'It may have been reset. Ask your banker to send you a new one.'}</p>
+          <div className="card animate-rise p-8 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-100 text-ink-400">
+              <Icon name="link" size={22} />
+            </span>
+            <h1 className="mt-4 font-display text-2xl font-semibold text-ink-900">This link doesn’t work</h1>
+            <p className="mt-1.5 text-sm text-ink-500">{error ?? 'It may have been reset. Ask your banker to send you a new one.'}</p>
           </div>
         ) : (
-          <div className="print-area rounded-3xl bg-white p-5 shadow-card sm:p-7 print:shadow-none">
+          <div className="print-area card animate-rise p-5 sm:p-8 print:shadow-none print:ring-0">
             <StatementView
               partner={view.partner}
               summary={view.summary}
@@ -83,7 +89,8 @@ export function PublicStatement({ token }: { token: string }) {
               names={view.names}
               showSchedule={view.partner.share_schedule}
             />
-            <p className="mt-6 border-t border-ink-100 pt-4 text-xs text-ink-400">
+            <p className="mt-6 flex items-center gap-1.5 border-t border-ink-100 pt-4 text-xs text-ink-400">
+              <Icon name="lock" size={12} className="shrink-0" />
               Read-only copy of the banker’s ledger. Something look wrong? Message your banker.
             </p>
           </div>

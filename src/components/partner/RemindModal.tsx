@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useLast } from '../../hooks/usePresence'
 import { arrearsByPeriod } from '../../lib/calc'
 import { formatMoney, monthsLabel } from '../../lib/format'
 import { normalizePhone, reminderMessage, waLink } from '../../lib/whatsapp'
@@ -14,9 +15,19 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
   const { profile } = useAuth()
   const [sent, setSent] = useState<Set<string>>(new Set())
 
-  const behind = summary.members
-    .filter((m) => m.behind > 0)
-    .sort((a, b) => (b.risk === 'high' ? 1 : 0) - (a.risk === 'high' ? 1 : 0) || b.behind - a.behind)
+  // Arrears are worked out month by month, so only while the sheet is open;
+  // the last list stays on screen while it slides away.
+  const live = useMemo(
+    () =>
+      open
+        ? summary.members
+            .filter((m) => m.behind > 0)
+            .sort((a, b) => (b.risk === 'high' ? 1 : 0) - (a.risk === 'high' ? 1 : 0) || b.behind - a.behind)
+            .map((m) => ({ m, months: arrearsByPeriod(partner, members, contributions, m.member.id, summary.period).map((a) => a.period) }))
+        : null,
+    [open, summary, partner, members, contributions],
+  )
+  const behind = useLast(live) ?? []
 
   return (
     <Modal open={open} onClose={onClose} title="Send reminders" subtitle={`${behind.length} behind · ${formatMoney(summary.behind)} owed`}>
@@ -31,8 +42,7 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
       ) : (
         <>
           <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
-            {behind.map((m) => {
-              const months = arrearsByPeriod(partner, members, contributions, m.member.id, summary.period).map((a) => a.period)
+            {behind.map(({ m, months }) => {
               const hasPhone = !!normalizePhone(m.member.phone)
               const done = sent.has(m.member.id)
               return (

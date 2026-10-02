@@ -99,12 +99,15 @@ function MemberCard({ m, startDate, rawPeriod, onOpen }: { m: MemberSummary; sta
             {formatHands(m.hands)} · {formatMoney(m.monthlyDue)}/mo
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <Icon name="chevron-right" size={16} className="shrink-0 text-ink-300 transition group-hover:translate-x-0.5 group-hover:text-ink-500" />
+      </div>
+
+      {(m.dueToDate > 0 || m.risk) && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
           <StandingBadge m={m} />
           <RiskBadge m={m} />
         </div>
-        <Icon name="chevron-right" size={16} className="shrink-0 text-ink-300 transition group-hover:translate-x-0.5 group-hover:text-ink-500" />
-      </div>
+      )}
 
       <div className="mt-4 h-1 overflow-hidden rounded-full bg-ink-100" aria-hidden>
         <div className="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400 transition-[width] duration-700 ease-out" style={{ width: `${paidShare * 100}%` }} />
