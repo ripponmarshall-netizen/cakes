@@ -22,6 +22,8 @@ interface Row {
   summary: PartnerSummary
 }
 
+const statusRank: Record<PartnerSummary['status'], number> = { active: 0, upcoming: 1, complete: 2 }
+
 function greeting(d = new Date()) {
   const h = d.getHours()
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
@@ -36,13 +38,16 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
 
   const rows: Row[] = useMemo(
     () =>
-      ledger.partners.map((partner) => {
-        const mine = <T extends { partner_id: string }>(xs: T[]) => xs.filter((x) => x.partner_id === partner.id)
-        return {
-          partner,
-          summary: summarizePartner(partner, mine(ledger.members), mine(ledger.contributions), mine(ledger.payouts)),
-        }
-      }),
+      ledger.partners
+        .map((partner) => {
+          const mine = <T extends { partner_id: string }>(xs: T[]) => xs.filter((x) => x.partner_id === partner.id)
+          return {
+            partner,
+            summary: summarizePartner(partner, mine(ledger.members), mine(ledger.contributions), mine(ledger.payouts)),
+          }
+        })
+        // Running partners first, then the ones still to start, finished ones last.
+        .sort((a, b) => statusRank[a.summary.status] - statusRank[b.summary.status] || a.partner.start_date.localeCompare(b.partner.start_date)),
     [ledger.partners, ledger.members, ledger.contributions, ledger.payouts],
   )
 
@@ -124,7 +129,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
       {loading ? (
         <div className="space-y-4" aria-busy="true">
           <Skeleton className="h-60 rounded-4xl" />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Skeleton className="h-40 rounded-3xl" />
             <Skeleton className="h-40 rounded-3xl" />
           </div>
@@ -190,8 +195,8 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
                       sub={
                         <>
                           {overdue && <span className="font-semibold text-rose-600">Overdue · </span>}
-                          {partner.name} · {periodLabel(partner.start_date, share.period)}
-                          {share.half ? ' · ½ hand' : ''}
+                          {periodLabel(partner.start_date, share.period)}
+                          {share.half ? ' · ½ hand' : ''} · {partner.name}
                         </>
                       }
                       right={<span className="num text-sm font-bold text-brand-700">{formatMoney(share.net)}</span>}
@@ -231,7 +236,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
               <h2 className="font-display text-lg font-semibold text-ink-900">Partners</h2>
               <span className="text-xs font-semibold text-ink-400">{rows.length}</span>
             </div>
-            <div className="stagger grid gap-3 sm:grid-cols-2">
+            <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2">
               {rows.map((r, i) => (
                 <PartnerCard key={r.partner.id} row={r} index={i} onOpen={() => onOpen(r.partner.id)} />
               ))}

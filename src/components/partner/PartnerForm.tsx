@@ -154,7 +154,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
         </Field>
 
         <Field label="Banker fee (taken from each draw)">
-          <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
             {feeType === 'flat' ? (
               <MoneyInput value={fee} onChange={(e) => setFee(e.target.value)} />
             ) : (
@@ -163,7 +163,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
                 <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-bold text-ink-400">%</span>
               </div>
             )}
-            <div className="w-28 self-center">
+            <div className="flex w-28 [&>*]:flex-1">
               <Segmented
                 value={feeType}
                 onChange={setFeeType}

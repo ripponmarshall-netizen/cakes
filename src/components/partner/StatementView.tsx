@@ -51,11 +51,11 @@ export function StatementView({
         <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
           {m.shares.map((s) => (
             <li key={`${s.slotIndex}-${s.handNo}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-              <span className="font-semibold">
+              <span className="min-w-0 font-semibold">
                 Month {s.period} · {periodLabel(partner.start_date, s.period)}
                 {s.half && <span className="font-normal text-ink-400"> · ½ hand</span>}
               </span>
-              <span className="num text-right">
+              <span className="num shrink-0 whitespace-nowrap text-right">
                 {s.payout ? (
                   <span className="font-semibold text-brand-700">
                     ✓ {formatMoney(s.payout.net)} on {formatDate(s.payout.paid_on)}
@@ -100,18 +100,23 @@ export function StatementView({
       {showSchedule && (
         <section>
           <h3 className="eyebrow mb-2">Full draw order</h3>
-          <ol className="divide-y divide-ink-100 rounded-2xl text-sm ring-1 ring-inset ring-ink-200/70">
-            {summary.schedule.map((slot) => (
-              <li key={slot.index} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                <span>
-                  <span className="num font-semibold">Month {slot.period}</span>{' '}
-                  <span className="text-ink-600">
-                    {slot.shares.map((s) => `${names.get(s.memberId) ?? 'Member'}${s.half ? ' (½)' : ''}`).join(' & ')}
+          <ol className="divide-y divide-ink-100 overflow-hidden rounded-2xl text-sm ring-1 ring-inset ring-ink-200/70">
+            {summary.schedule.map((slot) => {
+              // The reader's own draws stand out in the list.
+              const mine = slot.shares.some((s) => s.memberId === m.member.id)
+              return (
+                <li key={slot.index} className={`flex items-center justify-between gap-3 px-4 py-2.5 ${mine ? 'bg-gold-50/70 print:bg-transparent' : ''}`}>
+                  <span className="min-w-0">
+                    <span className="num font-semibold">Month {slot.period}</span>{' '}
+                    <span className={mine ? 'font-semibold text-ink-900' : 'text-ink-600'}>
+                      {slot.shares.map((s) => `${names.get(s.memberId) ?? 'Member'}${s.half ? ' (½)' : ''}`).join(' & ')}
+                    </span>
+                    {mine && <span className="ml-1.5 text-[11px] font-bold uppercase tracking-wider text-gold-600">You</span>}
                   </span>
-                </span>
-                <span className="text-xs text-ink-400">{slot.done ? '✓ paid' : periodLabel(partner.start_date, slot.period)}</span>
-              </li>
-            ))}
+                  <span className="shrink-0 whitespace-nowrap text-xs text-ink-400">{slot.done ? '✓ paid' : periodLabel(partner.start_date, slot.period)}</span>
+                </li>
+              )
+            })}
           </ol>
         </section>
       )}

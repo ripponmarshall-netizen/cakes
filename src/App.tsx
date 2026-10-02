@@ -7,7 +7,6 @@ import { Header } from './components/Header'
 import { PartnerList } from './components/partner/PartnerList'
 import { PartnerView } from './components/partner/PartnerView'
 import { PublicStatement } from './components/PublicStatement'
-import { OfflineBanner } from './components/OfflineBanner'
 import { Spinner } from './components/ui/Spinner'
 
 export default function App() {
@@ -26,15 +25,16 @@ export default function App() {
   return (
     <div className="min-h-screen pb-24">
       <Header onHome={isPartner ? () => navigate({ name: 'home' }) : undefined} />
-      <OfflineBanner />
-      <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
-        {/* Keyed so each page fades in when you move between them. */}
-        <div key={isPartner ? route.id : 'home'} className="animate-rise">
-          {isPartner ? (
-            <PartnerView partnerId={route.id} onGone={() => navigate({ name: 'home' })} />
-          ) : (
-            <PartnerList onOpen={(id) => navigate({ name: 'partner', id })} />
-          )}
+      <main className="px-safe">
+        <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
+          {/* Keyed so each page fades in when you move between them. */}
+          <div key={isPartner ? route.id : 'home'} className="animate-rise">
+            {isPartner ? (
+              <PartnerView partnerId={route.id} onGone={() => navigate({ name: 'home' })} />
+            ) : (
+              <PartnerList onOpen={(id) => navigate({ name: 'partner', id })} />
+            )}
+          </div>
         </div>
       </main>
     </div>

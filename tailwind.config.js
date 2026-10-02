@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Manrope', 'system-ui', 'sans-serif'],
-        display: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['"Manrope Variable"', 'Manrope', 'system-ui', 'sans-serif'],
+        display: ['"Fraunces Variable"', 'Fraunces', 'Georgia', 'serif'],
       },
       // Theme tokens live in src/index.css (light and dark sets).
       colors: {
@@ -67,6 +67,14 @@ export default {
           from: { opacity: '1', transform: 'scale(1)' },
           to: { opacity: '0', transform: 'translateY(8px) scale(0.98)' },
         },
+        'drop-in': {
+          from: { opacity: '0', transform: 'translateY(-14px) scale(0.96)' },
+          to: { opacity: '1', transform: 'none' },
+        },
+        'drop-out': {
+          from: { opacity: '1', transform: 'none' },
+          to: { opacity: '0', transform: 'translateY(-10px) scale(0.97)' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -80,6 +88,8 @@ export default {
         'sheet-out': 'sheet-out 0.24s cubic-bezier(0.4, 0, 1, 1) both',
         'pop-in': 'pop-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both',
         'pop-out': 'pop-out 0.18s ease-in both',
+        'drop-in': 'drop-in 0.36s cubic-bezier(0.34, 1.3, 0.64, 1) both',
+        'drop-out': 'drop-out 0.2s ease-in both',
         shimmer: 'shimmer 1.6s linear infinite',
       },
     },

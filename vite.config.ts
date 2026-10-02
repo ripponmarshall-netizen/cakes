@@ -28,14 +28,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png}'],
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-            handler: 'CacheFirst',
-            options: { cacheName: 'google-fonts', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } },
-          },
-        ],
+        // Latin font files only; the other subsets (Cyrillic, Vietnamese…) load on demand if ever needed.
+        globPatterns: ['**/*.{js,css,html,svg,png}', '**/*-latin-*.woff2'],
       },
     }),
   ],

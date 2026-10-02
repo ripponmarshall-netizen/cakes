@@ -116,7 +116,7 @@ export function MemberModal({
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" required maxLength={80} autoFocus={!member} />
       </Field>
       <Field label="Hands" hint={handsN > 0 ? (halfSteps ? `${formatMoney(partner.hand_amount * handsN)} a month` : 'Whole or half hands only') : undefined}>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <Input type="number" inputMode="decimal" min={0.5} max={50} step={0.5} value={hands} onChange={(e) => setHands(e.target.value)} className="num font-semibold" required />
           <span className="flex gap-1 rounded-2xl bg-ink-900/[0.05] p-1">
             {['0.5', '1', '1.5', '2'].map((h) => (

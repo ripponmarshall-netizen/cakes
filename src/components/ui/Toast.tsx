@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
 
 type ToastTone = 'success' | 'error' | 'info'
@@ -24,28 +24,39 @@ const toneStyles: Record<ToastTone, { icon: IconName; dot: string }> = {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
 
-  const toast = useCallback((message: string, tone: ToastTone = 'success') => {
-    const id = Date.now() + Math.random()
-    setItems((prev) => [...prev.slice(-2), { id, message, tone, leaving: false }])
-    const ttl = tone === 'error' ? 5200 : 3200
-    setTimeout(() => setItems((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t))), ttl)
-    setTimeout(() => setItems((prev) => prev.filter((t) => t.id !== id)), ttl + 220)
+  const dismiss = useCallback((id: number) => {
+    clearTimeout(timers.current.get(id))
+    timers.current.delete(id)
+    setItems((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)))
+    setTimeout(() => setItems((prev) => prev.filter((t) => t.id !== id)), 220)
   }, [])
+
+  const toast = useCallback(
+    (message: string, tone: ToastTone = 'success') => {
+      const id = Date.now() + Math.random()
+      setItems((prev) => [...prev.slice(-2), { id, message, tone, leaving: false }])
+      timers.current.set(id, setTimeout(() => dismiss(id), tone === 'error' ? 5200 : 3200))
+    },
+    [dismiss],
+  )
 
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
+      {/* At the top, so a toast never covers the buttons of a sheet that's still open. Tap to dismiss. */}
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4"
+        className="pointer-events-none fixed inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-[60] flex flex-col items-center gap-2 px-4"
         role="status"
         aria-live="polite"
       >
         {items.map((t) => (
           <div
             key={t.id}
-            className={`theme-light pointer-events-auto flex max-w-md items-center gap-2.5 rounded-2xl bg-ink-900/95 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-lift ring-1 ring-white/10 backdrop-blur ${
-              t.leaving ? 'animate-pop-out' : 'animate-pop-in'
+            onClick={() => dismiss(t.id)}
+            className={`theme-light pointer-events-auto flex max-w-md cursor-pointer items-center gap-2.5 rounded-2xl bg-ink-900/95 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-lift ring-1 ring-white/10 backdrop-blur ${
+              t.leaving ? 'animate-drop-out' : 'animate-drop-in'
             }`}
           >
             <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${toneStyles[t.tone].dot}`}>
