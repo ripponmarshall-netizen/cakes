@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { partnerTerms } from '../../lib/calc'
-import { formatMoney, plural, todayIso } from '../../lib/format'
+import { formatHands, formatMoney, plural, todayIso } from '../../lib/format'
 import type { FeeType, Partner } from '../../lib/types'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
@@ -31,6 +31,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
   const [feeType, setFeeType] = useState<FeeType>('flat')
   const [fee, setFee] = useState('0')
   const [notes, setNotes] = useState('')
+  const [shareSchedule, setShareSchedule] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
     setFeeType(partner?.fee_type ?? 'flat')
     setFee(String(partner?.fee_value ?? 0))
     setNotes(partner?.notes ?? '')
+    setShareSchedule(partner?.share_schedule ?? false)
   }, [open, partner])
 
   const termN = Math.max(0, Math.floor(Number(term) || 0))
@@ -62,6 +64,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
       fee_type: feeType,
       fee_value: feeN,
       notes: notes.trim() || null,
+      share_schedule: shareSchedule,
     }
     if (partner) {
       const { error } = await supabase.from('partners').update(values).eq('id', partner.id)
@@ -111,14 +114,14 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
           </Field>
         </div>
 
-        {totalHands > 0 && termN !== totalHands && (
+        {totalHands > 0 && termN !== Math.ceil(totalHands) && (
           <div className="flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs text-sky-800">
             <Icon name="info" size={16} className="mt-px shrink-0" />
             <span className="flex-1">
-              {plural(totalHands, 'hand')} over {plural(termN, 'month')} — draws will be spread out so the pot always covers
+              {formatHands(totalHands)} over {plural(termN, 'month')} — draws will be spread out so the pot always covers
               them.{' '}
-              <button type="button" className="font-bold underline" onClick={() => setTerm(String(totalHands))}>
-                Match hands ({totalHands})
+              <button type="button" className="font-bold underline" onClick={() => setTerm(String(Math.ceil(totalHands)))}>
+                Match hands ({Math.ceil(totalHands)})
               </button>
             </span>
           </div>
@@ -163,6 +166,17 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
         <Field label="Notes (optional)">
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Rules, where the box is kept…" />
         </Field>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-ink-50 p-3.5">
+          <input type="checkbox" checked={shareSchedule} onChange={(e) => setShareSchedule(e.target.checked)} className="mt-0.5 h-4 w-4 rounded accent-brand-700" />
+          <span className="text-sm">
+            <span className="block font-semibold text-ink-800">Show the draw order on members’ links</span>
+            <span className="block text-xs text-ink-500">
+              Off: a member’s link shows only their own payments and draws. On: it also lists everyone’s draw month by name (not what
+              anyone else has paid).
+            </span>
+          </span>
+        </label>
 
         {partner && hasActivity && (
           <p className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-800">

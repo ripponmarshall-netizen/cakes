@@ -12,30 +12,60 @@ members don't need accounts.
 
 | Setting | Meaning |
 | --- | --- |
-| **Hand** | What one hand pays each month (e.g. J$10,000). Members can throw several hands. |
+| **Hand** | What one hand pays each month (e.g. J$10,000). Members can throw several hands, or a **half hand**. |
 | **Length** | Months the cycle runs. Usually equals the number of hands; you can change it. |
 | **Banker fee** | Taken out of each draw — a flat J$ amount or a % of the draw. |
 
 - Each hand pays **hand × length** over the cycle and draws once.
 - A draw is worth **hand × length** (gross). The member receives that **minus the fee**.
 - A member with 2 hands pays double each month and draws twice.
-- With *H* hands over *T* months, hand #*i* draws in month ⌈(*i*+1)·*T*/*H*⌉. When
-  *T* = *H* that's one draw a month; otherwise draws are spaced so collections
-  always cover them (as long as everyone pays).
-- **In the pot** = everything collected − every draw paid out (gross).
+- A **half hand** pays half and gets half a draw. Two half hands share one draw
+  slot (same month, each gets half, each pays half the fee). Hands go in steps
+  of ½: ½, 1, 1½, 2…
+- Draw slots are spaced by running weight: the slot that brings the total to
+  *W* half-hands (out of *H*) draws in month ⌈*W*·*T*/*H*⌉. When months = hands
+  that's one draw a month; otherwise draws are spaced so collections always
+  cover them (as long as everyone pays).
+- **In the pot** = everything collected − every draw and refund paid out (gross).
   **Should be** = what the pot would hold if nobody were behind.
+- **At risk** = for each member who has drawn: what they drew (gross) minus what
+  they've paid in. That's what the group loses if they stop paying now. Flagged
+  red when they're also behind.
 
 All of this lives in [`src/lib/calc.ts`](src/lib/calc.ts) as pure functions, with
 tests in `calc.test.ts` (`npm test`).
 
 ## Features
 
+- **Home dashboard** — across every partner: cash in the pots, owed now, money
+  at risk, fees earned and to come, draws due this week, and who's behind.
 - **Payments** — month-by-month checklist. *Mark paid* in one tap, *Mark all
-  paid*, or record part payments with dates and notes.
-- **Members** — hands, what they've paid, whether they're behind or ahead, what
-  they'll receive in total, and their draw months.
-- **Draws** — the full schedule. Reorder with arrows, *Draw lots* to shuffle the
-  unpaid draws, *Pay* to record a payout (fee pre-filled), undo if needed.
+  paid*, or record part payments with method (cash / bank transfer / Lynk /
+  other), reference, date and note. One-tap WhatsApp nudge for anyone unpaid.
+- **Members** — whole or half hands, what they've paid, behind/ahead, what
+  they'll receive, draw months, and an **at-risk** flag once they've drawn.
+- **Draws** — the full schedule, with shared half-hand slots. Reorder with
+  arrows, *Draw lots* to shuffle the unpaid draws, *Pay* to record a payout
+  (fee pre-filled). If the member is behind you're warned and can **take the
+  arrears out of the draw**.
+- **No deleting money** — payments and payouts are *voided* with a reason, not
+  deleted, and amounts can't be edited. Every change lands in an **audit log**
+  (*History*) written by the database, with who did it and when.
+- **Reminders & statements** — *Remind* steps through everyone behind with a
+  pre-written WhatsApp message (`wa.me` link; Jamaican numbers normalised to
+  1-876). Each member has a printable statement (Print / Save as PDF).
+- **Member links** — each member gets a private read-only link
+  (`#/s/<token>`, no sign-in) showing only their own payments and draws.
+  Optionally also the full draw order with names (partner setting). Links can
+  be reset.
+- **Replace a member mid-cycle** — *buy-out* (new person takes over the hand,
+  payments and draws carry over) or *refund from pot* (old member refunded, new
+  member starts from month 1). The old member's record stays under "Left".
+- **Export & backup** — per-partner CSVs (transactions, members) and a full JSON
+  backup of everything, including the audit log.
+- **Installable & offline** — a PWA: add it to your home screen. Offline it
+  opens with the last data loaded on that phone (read-only); changes need a
+  connection.
 - **Several partners** side by side, each with its own settings.
 - **Realtime sync** between bankers' devices.
 
@@ -43,10 +73,18 @@ tests in `calc.test.ts` (`npm test`).
 
 ### 1. Database
 
-Run [`supabase/migrations/20261002000000_partner_ledger.sql`](supabase/migrations/20261002000000_partner_ledger.sql)
-in the Supabase SQL editor (or `supabase db push`). It's additive — it does not
-touch the old `cake_items` / `orders` tables. Drop those yourself if you no
-longer need them.
+Run the migrations in order in the Supabase SQL editor (or `supabase db push`):
+
+1. [`20261002000000_partner_ledger.sql`](supabase/migrations/20261002000000_partner_ledger.sql) — tables + RLS.
+2. [`20261003000000_ledger_v2.sql`](supabase/migrations/20261003000000_ledger_v2.sql) — half hands,
+   payment methods, voiding + audit log, member replacement, statement links.
+   Safe to run on existing data and safe to re-run.
+
+They're additive — they don't touch the old `cake_items` / `orders` tables.
+
+> The v2 migration exposes one function to signed-out visitors:
+> `member_statement(token)`, which returns a single member's own record for the
+> statement link. Everything else stays banker-only.
 
 ### 2. Run locally
 
@@ -91,12 +129,15 @@ Variables if needed.
 
 ```
 src/
-  lib/          calc.ts (all money maths), format.ts, types.ts, supabase.ts
+  lib/          calc.ts (all money maths), format.ts, types.ts, supabase.ts,
+                whatsapp.ts, csv.ts, cache.ts (offline copy)
   hooks/        useLiveTable (realtime), usePartnerData, useAdmin, useHashRoute
   components/
-    AuthScreen, AccessGate, Header, Logo
-    partner/    PartnerList, PartnerView, PaymentsTab, MembersTab, DrawsTab,
-                PartnerForm, MemberModal, ContributionModal, PayoutModal
+    AuthScreen, AccessGate, Header, Logo, PublicStatement, OfflineBanner
+    partner/    PartnerList (dashboard), PartnerView, PaymentsTab, MembersTab,
+                DrawsTab, PartnerForm, MemberModal, ContributionModal,
+                PayoutModal, StatementView/Modal, ReplaceMemberModal,
+                RemindModal, HistoryModal, ExportModal, VoidDialog
     ui/         Button, Input, Modal, Confirm, Toast, Badge, Icon, …
 supabase/migrations/   schema + RLS
 ```

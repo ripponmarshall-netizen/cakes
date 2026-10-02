@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { readCache, writeCache } from '../lib/cache'
 import { supabase } from '../lib/supabase'
 
 export type AdminState = 'checking' | 'admin' | 'claimable' | 'denied' | 'error'
@@ -19,10 +20,17 @@ export function useAdmin(userId: string | undefined) {
     setState('checking')
     const { data: isAdmin, error } = await supabase.rpc('is_admin')
     if (error) {
+      // Offline: trust this device's last successful check so the cached
+      // ledger still opens. The server keeps enforcing access on every request.
+      if (readCache<boolean>(`admin:${userId}`)) {
+        setState('admin')
+        return
+      }
       setMessage(error.message)
       setState('error')
       return
     }
+    writeCache(`admin:${userId}`, !!isAdmin)
     if (isAdmin) {
       setState('admin')
       return
@@ -47,8 +55,9 @@ export function useAdmin(userId: string | undefined) {
       setState('error')
       return
     }
+    if (data) writeCache(`admin:${userId}`, true)
     setState(data ? 'admin' : 'denied')
-  }, [setState])
+  }, [setState, userId])
 
   return { state, message, claim, recheck: check }
 }

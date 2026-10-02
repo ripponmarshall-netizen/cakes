@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { periodRows, type PeriodRow } from '../../lib/calc'
-import { formatMoney, periodDay, periodLabel, plural, todayIso } from '../../lib/format'
+import { formatHands, formatMoney, methodLabels, periodDay, periodLabel, plural, todayIso } from '../../lib/format'
+import { firstName, normalizePhone, waLink } from '../../lib/whatsapp'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
 import { Badge } from '../ui/Badge'
 import { Button, IconButton } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { Icon } from '../ui/Icon'
-import { ContributionModal } from './ContributionModal'
+import { ContributionModal, lastMethod } from './ContributionModal'
 import { Avatar, ProgressBar, type PartnerCtx } from './shared'
 
 export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembers: () => void }) {
@@ -26,7 +27,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
   const paid = rows.reduce((a, r) => a + Math.min(r.paid, r.due), 0)
   const paidCount = rows.filter((r) => r.status === 'paid').length
   const open = rows.filter((r) => r.status !== 'paid')
-  const draws = summary.schedule.filter((s) => s.period === current)
+  const draws = summary.schedule.filter((s) => s.period === current).flatMap((s) => s.shares)
   const selected = rows.find((r) => r.member.id === openRow) ?? null
 
   const when =
@@ -53,6 +54,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
         period: current,
         amount: r.remaining,
         paid_on: todayIso(),
+        method: lastMethod(),
       }))
     if (!inserts.length) return
     const { error } = await supabase.from('contributions').insert(inserts)
@@ -73,7 +75,8 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
       title: `Mark everyone paid for ${periodLabel(partner.start_date, current)}?`,
       message: (
         <>
-          Records {plural(open.length, 'payment')} totalling <strong className="num">{formatMoney(total)}</strong>, dated today.
+          Records {plural(open.length, 'payment')} totalling <strong className="num">{formatMoney(total)}</strong>, dated today
+          {' '}by {methodLabels[lastMethod()].toLowerCase()}.
         </>
       ),
       confirmLabel: 'Mark all paid',
@@ -124,8 +127,9 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
             {draws.map((d) => {
               const m = members.find((x) => x.id === d.memberId)
               return (
-                <Badge key={d.index} tone={d.payout ? 'green' : 'gold'}>
+                <Badge key={`${d.slotIndex}-${d.memberId}`} tone={d.payout ? 'green' : 'gold'}>
                   {m?.name ?? '—'}
+                  {d.half && ' (½)'}
                   {d.payout && <Icon name="check" size={12} />}
                 </Badge>
               )
@@ -151,7 +155,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
               <div className="min-w-0">
                 <p className="truncate font-bold text-ink-900">{r.member.name}</p>
                 <p className="num text-xs text-ink-500">
-                  {r.member.hands > 1 && <>{r.member.hands} hands · </>}
+                  {Number(r.member.hands) !== 1 && <>{formatHands(r.member.hands)} · </>}
                   {r.status === 'partial' ? (
                     <>
                       <span className="font-semibold text-amber-600">{formatMoney(r.remaining)} left</span> of {formatMoney(r.due)}
@@ -169,9 +173,26 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                 </Badge>
               </button>
             ) : (
-              <Button size="sm" variant="secondary" onClick={() => payOne(r)} loading={busy === r.member.id}>
-                Mark paid
-              </Button>
+              <div className="flex items-center gap-1">
+                {r.member.phone && normalizePhone(r.member.phone) && (
+                  <a
+                    href={waLink(
+                      r.member.phone,
+                      `Hi ${firstName(r.member.name)}, reminder for ${partner.name}: ${formatMoney(r.remaining)} for ${periodLabel(partner.start_date, current)} (month ${current}). Thanks!`,
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Remind ${r.member.name} on WhatsApp`}
+                    title="Remind on WhatsApp"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-brand-50 hover:text-brand-700"
+                  >
+                    <Icon name="message" size={17} />
+                  </a>
+                )}
+                <Button size="sm" variant="secondary" onClick={() => payOne(r)} loading={busy === r.member.id}>
+                  Mark paid
+                </Button>
+              </div>
             )}
           </li>
         ))}

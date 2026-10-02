@@ -1,26 +1,30 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { moveSlot, shuffleUnpaid, type DrawSlot } from '../../lib/calc'
+import { moveSlot, scheduleOrder, shuffleUnpaid, type DrawShare } from '../../lib/calc'
 import { formatDate, formatMoney, formatShortDate, periodLabel, plural } from '../../lib/format'
+import type { Member, Payout } from '../../lib/types'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
+import { Badge } from '../ui/Badge'
 import { Button, IconButton } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { Icon } from '../ui/Icon'
+import { VoidDialog } from './VoidDialog'
 import { Avatar, type PartnerCtx } from './shared'
 
-export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (slot: DrawSlot) => void }) {
+export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawShare) => void }) {
   const { partner, members, summary, refresh } = ctx
   const { toast } = useToast()
   const confirm = useConfirm()
   const [saving, setSaving] = useState(false)
+  const [voiding, setVoiding] = useState<Payout | null>(null)
   const { schedule, terms } = summary
   const memberById = new Map(members.map((m) => [m.id, m]))
 
   if (schedule.length === 0) {
     return (
       <EmptyState icon="gift" title="No draws yet">
-        Each hand gets one draw. Add members and the draw order appears here.
+        Each hand gets one draw; two half hands share one. Add members and the draw order appears here.
       </EmptyState>
     )
   }
@@ -34,35 +38,34 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (slot: DrawSl
     toast(message)
   }
 
-  const order = schedule.map((s) => s.memberId)
-  const canSwap = (a: number, b: number) => b >= 0 && b < schedule.length && !schedule[a].payout && !schedule[b].payout
+  const order = scheduleOrder(schedule)
+  const canSwap = (a: number, b: number) => b >= 0 && b < schedule.length && !schedule[a].locked && !schedule[b].locked
 
   async function shuffle() {
     const ok = await confirm({
       title: 'Draw lots?',
-      message: 'Randomly re-orders every hand that hasn’t been paid out yet. Draws already paid stay where they are.',
+      message: 'Randomly re-orders every draw that hasn’t been paid out yet. Draws already paid stay where they are; half hands keep their partner.',
       confirmLabel: 'Shuffle',
     })
     if (ok) saveOrder(shuffleUnpaid(schedule), 'Draw order shuffled')
   }
 
-  async function undo(slot: DrawSlot) {
-    if (!slot.payout) return
-    const name = memberById.get(slot.memberId)?.name ?? 'this member'
-    const ok = await confirm({
-      title: 'Undo this payout?',
-      message: `Deletes the record of ${formatMoney(slot.payout.net)} paid to ${name} on ${formatDate(slot.payout.paid_on)}.`,
-      confirmLabel: 'Undo payout',
-      danger: true,
-    })
-    if (!ok) return
-    const { error } = await supabase.from('payouts').delete().eq('id', slot.payout.id)
-    if (error) return toast(error.message, 'error')
+  async function voidPayout(reason: string): Promise<boolean> {
+    if (!voiding) return false
+    const { error } = await supabase
+      .from('payouts')
+      .update({ voided_at: new Date().toISOString(), void_reason: reason })
+      .eq('id', voiding.id)
+    if (error) {
+      toast(error.message, 'error')
+      return false
+    }
     refresh()
-    toast('Payout removed', 'info')
+    toast('Payout voided', 'info')
+    return true
   }
 
-  const perMonth = summary.totalHands / partner.term_months
+  const perMonth = schedule.length / partner.term_months
 
   return (
     <div className="space-y-4">
@@ -73,71 +76,120 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (slot: DrawSl
           {perMonth !== 1 && (
             <>
               {' '}
-              · {Number.isInteger(perMonth) ? `${perMonth} draws a month` : `${plural(summary.totalHands, 'draw')} over ${partner.term_months} months`}
+              · {Number.isInteger(perMonth) ? `${perMonth} draws a month` : `${plural(schedule.length, 'draw')} over ${partner.term_months} months`}
             </>
           )}
         </p>
-        <Button size="sm" variant="secondary" onClick={shuffle} loading={saving} disabled={schedule.every((s) => s.payout)}>
+        <Button size="sm" variant="secondary" onClick={shuffle} loading={saving} disabled={schedule.every((s) => s.locked)}>
           <Icon name="shuffle" size={16} /> Draw lots
         </Button>
       </div>
 
       <ol className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white shadow-card">
         {schedule.map((slot, i) => {
-          const m = memberById.get(slot.memberId)
-          if (!m) return null
-          const isNow = !slot.payout && slot.period === summary.rawPeriod
-          const overdue = !slot.payout && slot.period < summary.rawPeriod
+          const isNow = !slot.done && slot.period === summary.rawPeriod
+          const overdue = !slot.done && slot.period < summary.rawPeriod
           return (
             <li key={slot.index} className={`flex items-center gap-3 px-3 py-3 sm:px-4 ${isNow ? 'bg-gold-50/60' : ''}`}>
-              <div className="w-12 shrink-0 text-center">
+              <div className="w-12 shrink-0 self-start pt-1 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-ink-400">Month</p>
                 <p className="num text-lg font-extrabold leading-tight text-ink-800">{slot.period}</p>
               </div>
-              <Avatar name={m.name} id={m.id} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-ink-900">
-                  {m.name}
-                  {m.hands > 1 && <span className="font-medium text-ink-400"> · hand {slot.handNo}</span>}
-                </p>
-                <p className="text-xs text-ink-500">
-                  {slot.payout ? (
-                    <span className="num inline-flex items-center gap-1 font-semibold text-brand-700">
-                      <Icon name="check" size={12} /> {formatMoney(slot.payout.net)} · {formatShortDate(slot.payout.paid_on)}
-                    </span>
-                  ) : (
-                    <>
-                      {periodLabel(partner.start_date, slot.period)}
-                      {overdue && <span className="font-semibold text-rose-600"> · overdue</span>}
-                      {isNow && <span className="font-semibold text-gold-600"> · this month</span>}
-                    </>
-                  )}
-                </p>
+              <div className="min-w-0 flex-1 space-y-2.5">
+                {slot.shares.map((share) => (
+                  <ShareRow
+                    key={share.memberId}
+                    share={share}
+                    member={memberById.get(share.memberId)}
+                    startDate={partner.start_date}
+                    lone={slot.half && slot.shares.length === 1}
+                    status={overdue ? 'overdue' : isNow ? 'now' : null}
+                    onPay={() => onPay(share)}
+                    onVoid={() => share.payout && setVoiding(share.payout)}
+                  />
+                ))}
               </div>
-
-              {slot.payout ? (
-                <IconButton label="Undo payout" onClick={() => undo(slot)}>
-                  <Icon name="undo" size={16} />
-                </IconButton>
-              ) : (
-                <div className="flex items-center gap-0.5">
-                  <Button size="sm" variant={isNow || overdue ? 'gold' : 'ghost'} onClick={() => onPay(slot)}>
-                    Pay
-                  </Button>
-                  <div className="flex flex-col">
-                    <ReorderButtons
-                      up={canSwap(i, i - 1) ? () => saveOrder(moveSlot(order, i, i - 1), 'Order updated') : undefined}
-                      down={canSwap(i, i + 1) ? () => saveOrder(moveSlot(order, i, i + 1), 'Order updated') : undefined}
-                      disabled={saving}
-                    />
-                  </div>
+              {!slot.locked && (
+                <div className="flex flex-col self-center">
+                  <ReorderButtons
+                    up={canSwap(i, i - 1) ? () => saveOrder(moveSlot(order, i, i - 1), 'Order updated') : undefined}
+                    down={canSwap(i, i + 1) ? () => saveOrder(moveSlot(order, i, i + 1), 'Order updated') : undefined}
+                    disabled={saving}
+                  />
                 </div>
               )}
             </li>
           )
         })}
       </ol>
-      <p className="text-center text-xs text-ink-400">Use the arrows to swap who draws when. Paid draws are locked.</p>
+      <p className="text-center text-xs text-ink-400">
+        Use the arrows to swap who draws when. Paid draws are locked. Two half hands share one draw and move together.
+      </p>
+
+      <VoidDialog open={!!voiding} title="Void this payout?" confirmLabel="Void payout" onClose={() => setVoiding(null)} onConfirm={voidPayout}>
+        {voiding && (
+          <>
+            The record of {formatMoney(voiding.net)} paid to {memberById.get(voiding.member_id)?.name ?? 'this member'} on{' '}
+            {formatDate(voiding.paid_on)} stops counting, and the draw opens again.
+          </>
+        )}
+      </VoidDialog>
+    </div>
+  )
+}
+
+function ShareRow({
+  share,
+  member,
+  startDate,
+  lone,
+  status,
+  onPay,
+  onVoid,
+}: {
+  share: DrawShare
+  member: Member | undefined
+  startDate: string
+  lone: boolean
+  status: 'overdue' | 'now' | null
+  onPay: () => void
+  onVoid: () => void
+}) {
+  if (!member) return null
+  const multi = Number(member.hands) > 1
+  return (
+    <div className="flex items-center gap-3">
+      <Avatar name={member.name} id={member.id} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-bold text-ink-900">
+          {member.name}
+          {share.half && <Badge tone="blue" className="ml-1.5 align-middle">½ hand</Badge>}
+          {multi && !share.half && <span className="font-medium text-ink-400"> · hand {share.handNo}</span>}
+        </p>
+        <p className="text-xs text-ink-500">
+          {share.payout ? (
+            <span className="num inline-flex items-center gap-1 font-semibold text-brand-700">
+              <Icon name="check" size={12} /> {formatMoney(share.payout.net)} · {formatShortDate(share.payout.paid_on)}
+            </span>
+          ) : (
+            <>
+              <span className="num">{formatMoney(share.net)}</span> · {periodLabel(startDate, share.period)}
+              {status === 'overdue' && <span className="font-semibold text-rose-600"> · overdue</span>}
+              {status === 'now' && <span className="font-semibold text-gold-600"> · this month</span>}
+              {lone && <span className="text-ink-400"> · no half-hand partner yet</span>}
+            </>
+          )}
+        </p>
+      </div>
+      {share.payout ? (
+        <IconButton label="Void payout" onClick={onVoid}>
+          <Icon name="undo" size={16} />
+        </IconButton>
+      ) : (
+        <Button size="sm" variant={status ? 'gold' : 'ghost'} onClick={onPay}>
+          Pay
+        </Button>
+      )}
     </div>
   )
 }
