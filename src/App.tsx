@@ -1,74 +1,32 @@
-import { useState } from 'react'
 import { useAuth } from './context/AuthContext'
-import { useOrders } from './hooks/useOrders'
+import { useAdmin } from './hooks/useAdmin'
+import { useHashRoute } from './hooks/useHashRoute'
 import { AuthScreen } from './components/AuthScreen'
+import { AccessGate } from './components/AccessGate'
 import { Header } from './components/Header'
-import { SummaryBar } from './components/SummaryBar'
-import { CakeMenu } from './components/cakes/CakeMenu'
-import { OrdersView } from './components/orders/OrdersView'
-
-type Tab = 'orders' | 'menu'
+import { PartnerList } from './components/partner/PartnerList'
+import { PartnerView } from './components/partner/PartnerView'
+import { Spinner } from './components/ui/Spinner'
 
 export default function App() {
   const { session, loading } = useAuth()
-  const { orders, loading: ordersLoading } = useOrders()
-  const [tab, setTab] = useState<Tab>('orders')
+  const admin = useAdmin(session?.user.id)
+  const { route, navigate } = useHashRoute()
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blush-200 border-t-blush-500" />
-      </div>
-    )
-  }
-
-  if (!session) {
-    return <AuthScreen />
-  }
+  if (loading || (session && admin.state === 'checking')) return <Spinner fullScreen />
+  if (!session) return <AuthScreen />
+  if (admin.state !== 'admin') return <AccessGate admin={admin} />
 
   return (
-    <div className="min-h-screen pb-16">
-      <Header />
-
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
-        <SummaryBar orders={orders} />
-
-        <div className="inline-flex rounded-xl bg-white p-1 shadow-card">
-          <TabButton active={tab === 'orders'} onClick={() => setTab('orders')}>
-            Sales
-          </TabButton>
-          <TabButton active={tab === 'menu'} onClick={() => setTab('menu')}>
-            Cakes
-          </TabButton>
-        </div>
-
-        {tab === 'orders' ? (
-          <OrdersView orders={orders} loading={ordersLoading} />
+    <div className="min-h-screen pb-20">
+      <Header onHome={route.name === 'partner' ? () => navigate({ name: 'home' }) : undefined} />
+      <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
+        {route.name === 'partner' ? (
+          <PartnerView key={route.id} partnerId={route.id} onGone={() => navigate({ name: 'home' })} />
         ) : (
-          <CakeMenu />
+          <PartnerList onOpen={(id) => navigate({ name: 'partner', id })} />
         )}
       </main>
     </div>
-  )
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${
-        active ? 'bg-blush-500 text-white shadow-sm' : 'text-cocoa-500 hover:text-cocoa-700'
-      }`}
-    >
-      {children}
-    </button>
   )
 }

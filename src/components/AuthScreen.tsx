@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from './ui/Toast'
 import { Button } from './ui/Button'
 import { Field, Input } from './ui/Input'
+import { Logo } from './Logo'
 
 const INVITE_CODE = import.meta.env.VITE_SIGNUP_INVITE_CODE as string
 
@@ -58,43 +59,36 @@ export function AuthScreen() {
     }
   }
 
+  const tab = (m: Mode, label: string) => (
+    <button
+      type="button"
+      onClick={() => {
+        setMode(m)
+        setError(null)
+      }}
+      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+        mode === m ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-700'
+      }`}
+    >
+      {label}
+    </button>
+  )
+
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="animate-rise w-full max-w-md">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-blush-100 text-3xl shadow-card">
-            🧁
+        <div className="mb-7 text-center">
+          <div className="mb-4 flex justify-center">
+            <Logo size={56} />
           </div>
-          <h1 className="text-3xl font-bold text-cocoa-800">Sweet Sales</h1>
-          <p className="mt-1 text-cocoa-500">Cake orders & sales for your team of two.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink-900">Partner Ledger</h1>
+          <p className="mt-1.5 text-ink-500">Hands, payments, the pot and every draw — in one place.</p>
         </div>
 
-        <div className="rounded-3xl bg-white p-6 shadow-soft sm:p-8">
-          <div className="mb-6 flex rounded-xl bg-blush-50 p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('signin')
-                setError(null)
-              }}
-              className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
-                mode === 'signin' ? 'bg-white text-cocoa-800 shadow-sm' : 'text-cocoa-500'
-              }`}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('signup')
-                setError(null)
-              }}
-              className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
-                mode === 'signup' ? 'bg-white text-cocoa-800 shadow-sm' : 'text-cocoa-500'
-              }`}
-            >
-              Create account
-            </button>
+        <div className="rounded-3xl bg-white p-6 shadow-card sm:p-8">
+          <div className="mb-6 flex rounded-xl bg-ink-100 p-1">
+            {tab('signin', 'Sign in')}
+            {tab('signup', 'Create account')}
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
@@ -103,7 +97,7 @@ export function AuthScreen() {
                 <Input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="e.g. Maya"
+                  placeholder="e.g. Miss Pearl"
                   autoComplete="name"
                 />
               </Field>
@@ -133,20 +127,12 @@ export function AuthScreen() {
             </Field>
 
             {mode === 'signup' && (
-              <Field label="Invite code" hint="Ask your teammate for the shared code.">
-                <Input
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder="Team invite code"
-                />
+              <Field label="Invite code" hint="Ask the banker for the code.">
+                <Input value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="Invite code" />
               </Field>
             )}
 
-            {error && (
-              <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">
-                {error}
-              </p>
-            )}
+            {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{error}</p>}
 
             <Button type="submit" loading={submitting} className="w-full">
               {mode === 'signin' ? 'Sign in' : 'Create account'}
@@ -154,9 +140,7 @@ export function AuthScreen() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs text-cocoa-400">
-          A cozy little tool for managing cake orders. 🎂
-        </p>
+        <p className="mt-6 text-center text-xs text-ink-400">For bankers only. Members don’t need an account.</p>
       </div>
     </div>
   )

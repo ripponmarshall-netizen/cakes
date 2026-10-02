@@ -1,94 +1,102 @@
-# 🧁 Sweet Sales — Cake Orders & Sales
+# Partner Ledger
 
-A fun, simple, and polished web app for a **team of two** to sign in and manage
-cake **sales and orders** together. Built with **React + Vite + TypeScript +
-Tailwind CSS**, backed by **Supabase** for the database, authentication, and
-**realtime sync** — when one person adds something, it appears for the other
-instantly.
+A simple, polished web app for running a **partner** (rotating savings circle):
+track members and their hands, tick off monthly payments, see what's in the
+pot, and record each draw with the banker's fee.
+
+Built with **React + Vite + TypeScript + Tailwind**, backed by **Supabase**
+(Postgres, auth, realtime). Only the banker (and any co-bankers) sign in —
+members don't need accounts.
+
+## How the money works
+
+| Setting | Meaning |
+| --- | --- |
+| **Hand** | What one hand pays each month (e.g. J$10,000). Members can throw several hands. |
+| **Length** | Months the cycle runs. Usually equals the number of hands; you can change it. |
+| **Banker fee** | Taken out of each draw — a flat J$ amount or a % of the draw. |
+
+- Each hand pays **hand × length** over the cycle and draws once.
+- A draw is worth **hand × length** (gross). The member receives that **minus the fee**.
+- A member with 2 hands pays double each month and draws twice.
+- With *H* hands over *T* months, hand #*i* draws in month ⌈(*i*+1)·*T*/*H*⌉. When
+  *T* = *H* that's one draw a month; otherwise draws are spaced so collections
+  always cover them (as long as everyone pays).
+- **In the pot** = everything collected − every draw paid out (gross).
+  **Should be** = what the pot would hold if nobody were behind.
+
+All of this lives in [`src/lib/calc.ts`](src/lib/calc.ts) as pure functions, with
+tests in `calc.test.ts` (`npm test`).
 
 ## Features
 
-- 🔐 **Private sign-in** — two sellers, each with their own account.
-- 🎂 **Editable cake menu** — keep a list of cakes, each with a description, a
-  "what it comes with" list, and a price (in JMD).
-- 🧾 **Record sales** — pick a cake, add the customer's name, and mark it
-  **Unpaid**, **Deposit** (with amount), or **Paid in full**. Balance is worked
-  out for you.
-- 👥 **Who logged it** — every order shows which teammate recorded it and when.
-- 🔄 **Realtime sync** — both screens stay in sync automatically via Supabase.
-- 📊 **At-a-glance totals** — sales count, money collected, and outstanding
-  balance.
+- **Payments** — month-by-month checklist. *Mark paid* in one tap, *Mark all
+  paid*, or record part payments with dates and notes.
+- **Members** — hands, what they've paid, whether they're behind or ahead, what
+  they'll receive in total, and their draw months.
+- **Draws** — the full schedule. Reorder with arrows, *Draw lots* to shuffle the
+  unpaid draws, *Pay* to record a payout (fee pre-filled), undo if needed.
+- **Several partners** side by side, each with its own settings.
+- **Realtime sync** between bankers' devices.
 
-## Quick start (local)
+## Setup
+
+### 1. Database
+
+Run [`supabase/migrations/20261002000000_partner_ledger.sql`](supabase/migrations/20261002000000_partner_ledger.sql)
+in the Supabase SQL editor (or `supabase db push`). It's additive — it does not
+touch the old `cake_items` / `orders` tables. Drop those yourself if you no
+longer need them.
+
+### 2. Run locally
 
 ```bash
 npm install
-cp .env.example .env.local   # values are already filled in for this project
+cp .env.example .env.local
 npm run dev
 ```
 
-Then open the printed URL (http://localhost:5173).
+### 3. Become the banker
 
-### Environment variables
+Create an account (invite code from `VITE_SIGNUP_INVITE_CODE`), then click
+**Claim banker access**. Only the first person can claim it. Every other
+account sees "Waiting for access" and can read nothing — enforced by Row Level
+Security, not by the UI.
 
-| Variable | What it is |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Your Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | The publishable / anon key (safe in the browser) |
-| `VITE_SIGNUP_INVITE_CODE` | A shared secret required to create an account |
+To add a co-banker after they've signed up, run in the SQL editor:
 
-> The Supabase URL and publishable key are designed to be public — they're safe
-> to ship in a browser app. Access to your data is protected by Row Level
-> Security and the login.
+```sql
+insert into public.app_admins (user_id)
+select id from auth.users where email = 'cobanker@example.com';
+```
 
-## First-run: create the two accounts
+> Tip: once the bankers' accounts exist, turn off sign-ups in
+> **Supabase → Authentication → Sign In / Providers** for belt-and-braces.
 
-1. Start the app and click **Create account**.
-2. Enter your name, email, password, and the **invite code**
-   (default: `sweetteam` — change it in `.env.local`).
-3. Have your teammate do the same on their own device.
-4. Once both accounts exist, change `VITE_SIGNUP_INVITE_CODE` to something new
-   (and redeploy) so no one else can register.
+## Scripts
 
-> **Email confirmation:** By default the app signs you straight in. If you've
-> turned on email confirmation in **Supabase → Authentication → Providers →
-> Email**, you'll be asked to confirm via email before signing in. For a quick
-> two-person setup you can leave confirmation off.
+```bash
+npm run dev       # local dev server
+npm test          # unit tests for the partner maths
+npm run build     # type-check + production build to dist/
+```
 
-## How it's organised
+## Deploy
+
+Pushing to `main` builds and deploys to GitHub Pages via
+`.github/workflows/deploy.yml`. Override the `VITE_*` values with repository
+Variables if needed.
+
+## Project layout
 
 ```
 src/
-  lib/         supabase client, shared types, money/date formatting
-  context/     AuthContext (session + profile)
-  hooks/       useCakeItems, useOrders (with realtime subscriptions)
+  lib/          calc.ts (all money maths), format.ts, types.ts, supabase.ts
+  hooks/        useLiveTable (realtime), usePartnerData, useAdmin, useHashRoute
   components/
-    AuthScreen, Header, SummaryBar
-    cakes/     CakeMenu, CakeCard, CakeForm
-    orders/    OrdersView, OrderRow, OrderForm
-    ui/        Button, Input, Modal, Badge, Toast, EmptyState
+    AuthScreen, AccessGate, Header, Logo
+    partner/    PartnerList, PartnerView, PaymentsTab, MembersTab, DrawsTab,
+                PartnerForm, MemberModal, ContributionModal, PayoutModal
+    ui/         Button, Input, Modal, Confirm, Toast, Badge, Icon, …
+supabase/migrations/   schema + RLS
 ```
-
-## Backend (Supabase)
-
-The database has three tables, all protected with Row Level Security so only
-signed-in users can read or write:
-
-- **`profiles`** — a display name per user (auto-created on signup).
-- **`cake_items`** — your editable cake menu.
-- **`orders`** — the sales ledger (customer, payment status, deposit, total,
-  who recorded it).
-
-`cake_items` and `orders` are published to Supabase Realtime, which is what
-keeps both teammates in sync.
-
-## Build & deploy
-
-```bash
-npm run build      # type-checks and builds to dist/
-npm run preview    # preview the production build locally
-```
-
-`dist/` is a static site — deploy it to any static host (Vercel, Netlify,
-Cloudflare Pages, etc.). Set the three `VITE_*` environment variables in your
-host's dashboard.

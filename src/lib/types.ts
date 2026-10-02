@@ -1,4 +1,4 @@
-export type PaymentStatus = 'unpaid' | 'deposit' | 'paid_in_full'
+export type FeeType = 'flat' | 'percent'
 
 export interface Profile {
   id: string
@@ -6,34 +6,50 @@ export interface Profile {
   created_at: string
 }
 
-export interface CakeItem {
+export interface Partner {
   id: string
   name: string
-  description: string | null
-  includes: string[]
-  price: number
-  sort_order: number
+  hand_amount: number
+  start_date: string // YYYY-MM-DD
+  term_months: number
+  fee_type: FeeType
+  fee_value: number
+  draw_order: string[]
+  notes: string | null
   created_at: string
   updated_at: string
 }
 
-export interface Order {
+export interface Member {
   id: string
-  cake_item_id: string | null
-  cake_name_snapshot: string | null
-  customer_name: string
-  payment_status: PaymentStatus
-  deposit_amount: number
-  total_amount: number
+  partner_id: string
+  name: string
+  phone: string | null
+  hands: number
   notes: string | null
-  created_by: string | null
   created_at: string
-  // Joined from profiles for display
-  created_by_profile?: { display_name: string } | null
 }
 
-export const PAYMENT_LABELS: Record<PaymentStatus, string> = {
-  unpaid: 'Unpaid',
-  deposit: 'Deposit',
-  paid_in_full: 'Paid in full',
+export interface Contribution {
+  id: string
+  partner_id: string
+  member_id: string
+  period: number
+  amount: number
+  paid_on: string
+  note: string | null
+  created_at: string
+}
+
+export interface Payout {
+  id: string
+  partner_id: string
+  member_id: string
+  period: number
+  gross: number
+  fee: number
+  net: number
+  paid_on: string
+  note: string | null
+  created_at: string
 }

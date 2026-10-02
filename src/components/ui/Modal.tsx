@@ -1,13 +1,15 @@
 import { useEffect, type ReactNode } from 'react'
+import { Icon } from './Icon'
 
 interface ModalProps {
   open: boolean
   onClose: () => void
   title: string
+  subtitle?: ReactNode
   children: ReactNode
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, subtitle, children }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -24,23 +26,26 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+      <div className="absolute inset-0 bg-ink-900/40 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
       <div
-        className="absolute inset-0 bg-cocoa-800/40 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div className="animate-rise relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-6 shadow-soft sm:max-w-lg sm:rounded-3xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-cocoa-800">{title}</h2>
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="animate-rise relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lift sm:max-w-lg sm:rounded-3xl sm:p-6"
+      >
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-ink-900">{title}</h2>
+            {subtitle && <p className="mt-0.5 text-sm text-ink-500">{subtitle}</p>}
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-cocoa-400 transition hover:bg-blush-50 hover:text-cocoa-600"
+            className="-mr-1 -mt-1 rounded-full p-1.5 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700"
             aria-label="Close"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <Icon name="x" />
           </button>
         </div>
         {children}
