@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field, Input } from '../ui/Input'
+import { Icon } from '../ui/Icon'
+import { useLast } from '../../hooks/usePresence'
 
 /**
  * Voiding replaces deleting: the record stays (crossed out) with who voided it,
@@ -38,21 +40,33 @@ export function VoidDialog({
     if (ok) onClose()
   }
 
+  // Keep the explanation on screen while the dialog animates out.
+  const body = useLast(open ? children : null)
+
   return (
-    <Modal open={open} onClose={onClose} title={title}>
-      <form onSubmit={submit} className="space-y-4">
-        <div className="text-sm text-ink-600">{children}</div>
-        <Field label="Reason" hint="Kept in the history. The record stays visible, crossed out.">
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Recorded twice, wrong member…" autoFocus required maxLength={200} />
-        </Field>
-        <div className="flex gap-2">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      footer={
+        <div className="flex gap-2.5">
           <Button variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="danger" className="flex-1" loading={saving} disabled={!reason.trim()}>
+          <Button type="submit" form="void-form" variant="danger" className="flex-1" loading={saving} disabled={!reason.trim()}>
             {confirmLabel}
           </Button>
         </div>
+      }
+    >
+      <form id="void-form" onSubmit={submit} className="space-y-4 pb-2">
+        <div className="flex items-start gap-3 rounded-2xl bg-rose-50/80 p-4 text-sm leading-relaxed text-rose-900 ring-1 ring-inset ring-rose-200/70">
+          <Icon name="ban" size={18} className="mt-0.5 shrink-0 text-rose-500" />
+          <div>{body}</div>
+        </div>
+        <Field label="Reason" hint="Kept in the history. The record stays visible, crossed out.">
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Recorded twice, wrong member…" autoFocus required maxLength={200} />
+        </Field>
       </form>
     </Modal>
   )

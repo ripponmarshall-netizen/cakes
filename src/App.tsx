@@ -21,16 +21,21 @@ export default function App() {
   if (!session) return <AuthScreen />
   if (admin.state !== 'admin') return <AccessGate admin={admin} />
 
+  const isPartner = route.name === 'partner'
+
   return (
-    <div className="min-h-screen pb-20">
-      <Header onHome={route.name === 'partner' ? () => navigate({ name: 'home' }) : undefined} />
+    <div className="min-h-screen pb-24">
+      <Header onHome={isPartner ? () => navigate({ name: 'home' }) : undefined} />
       <OfflineBanner />
       <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
-        {route.name === 'partner' ? (
-          <PartnerView key={route.id} partnerId={route.id} onGone={() => navigate({ name: 'home' })} />
-        ) : (
-          <PartnerList onOpen={(id) => navigate({ name: 'partner', id })} />
-        )}
+        {/* Keyed so each page fades in when you move between them. */}
+        <div key={isPartner ? route.id : 'home'} className="animate-rise">
+          {isPartner ? (
+            <PartnerView partnerId={route.id} onGone={() => navigate({ name: 'home' })} />
+          ) : (
+            <PartnerList onOpen={(id) => navigate({ name: 'partner', id })} />
+          )}
+        </div>
       </main>
     </div>
   )

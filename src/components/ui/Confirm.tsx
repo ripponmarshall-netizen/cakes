@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
 import { Modal } from './Modal'
 import { Button } from './Button'
+import { useLast } from '../../hooks/usePresence'
 
 interface ConfirmOptions {
   title: string
@@ -31,19 +32,28 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     setOpts(null)
   }, [])
 
+  // Keep showing the last dialog's text while it animates out.
+  const shown = useLast(opts)
+
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
-      <Modal open={!!opts} onClose={() => close(false)} title={opts?.title ?? ''}>
-        <div className="text-sm text-ink-600">{opts?.message}</div>
-        <div className="mt-6 flex gap-2">
-          <Button variant="secondary" className="flex-1" onClick={() => close(false)}>
-            Cancel
-          </Button>
-          <Button variant={opts?.danger ? 'danger' : 'primary'} className="flex-1" onClick={() => close(true)}>
-            {opts?.confirmLabel ?? 'Confirm'}
-          </Button>
-        </div>
+      <Modal
+        open={!!opts}
+        onClose={() => close(false)}
+        title={shown?.title ?? ''}
+        footer={
+          <div className="flex gap-2.5">
+            <Button variant="secondary" className="flex-1" onClick={() => close(false)} autoFocus={!!shown?.danger}>
+              Cancel
+            </Button>
+            <Button variant={shown?.danger ? 'danger' : 'primary'} className="flex-1" onClick={() => close(true)} autoFocus={!shown?.danger}>
+              {shown?.confirmLabel ?? 'Confirm'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="pb-2 text-[15px] leading-relaxed text-ink-600">{shown?.message}</div>
       </Modal>
     </ConfirmContext.Provider>
   )

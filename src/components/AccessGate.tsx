@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { useAdmin } from '../hooks/useAdmin'
-import { Logo } from './Logo'
+import { AuthShell } from './AuthScreen'
+import { Icon } from './ui/Icon'
 import { Button } from './ui/Button'
 
 export function AccessGate({ admin }: { admin: ReturnType<typeof useAdmin> }) {
@@ -26,14 +27,20 @@ export function AccessGate({ admin }: { admin: ReturnType<typeof useAdmin> }) {
   }[admin.state]
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="animate-rise w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-card">
-        <div className="mb-4 flex justify-center">
-          <Logo size={48} />
-        </div>
-        <h1 className="text-xl font-extrabold text-ink-900">{content.title}</h1>
-        <p className="mt-2 text-sm text-ink-500">{content.body}</p>
-        <p className="mt-3 text-xs text-ink-400">Signed in as {session?.user.email}</p>
+    <AuthShell>
+      <div className="card p-7 text-center">
+        <span
+          className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl ${
+            admin.state === 'error' ? 'bg-rose-50 text-rose-600' : admin.state === 'claimable' ? 'bg-gold-50 text-gold-600' : 'bg-ink-100 text-ink-500'
+          }`}
+        >
+          <Icon name={admin.state === 'error' ? 'alert' : admin.state === 'claimable' ? 'sparkle' : 'lock'} size={22} />
+        </span>
+        <h2 className="mt-4 font-display text-2xl font-semibold text-ink-900">{content.title}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink-500">{content.body}</p>
+        <p className="mt-4 inline-flex rounded-full bg-ink-50 px-3 py-1 text-xs text-ink-500 ring-1 ring-inset ring-ink-900/[0.05]">
+          Signed in as {session?.user.email}
+        </p>
         <div className="mt-6 flex flex-col gap-2">
           {admin.state === 'claimable' && (
             <Button
@@ -57,6 +64,6 @@ export function AccessGate({ admin }: { admin: ReturnType<typeof useAdmin> }) {
           </Button>
         </div>
       </div>
-    </div>
+    </AuthShell>
   )
 }

@@ -13,6 +13,7 @@ import { Badge } from '../ui/Badge'
 import { MethodPicker } from './MethodPicker'
 import { VoidDialog } from './VoidDialog'
 import type { PartnerCtx } from './shared'
+import { useLast } from '../../hooks/usePresence'
 
 /**
  * The method used last on this device, so "Mark paid" matches how you usually
@@ -26,7 +27,7 @@ export const rememberMethod = (m: PayoutMethod, kind: MethodFor = 'payment') => 
 /** A member's payments for one month: history, void, and add (part or full). */
 export function ContributionModal({
   ctx,
-  row,
+  row: liveRow,
   period,
   onClose,
 }: {
@@ -44,11 +45,13 @@ export function ContributionModal({
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [voiding, setVoiding] = useState<Contribution | null>(null)
-  const memberId = row?.member.id
+  // Keep the last row on screen while the sheet slides away.
+  const row = useLast(liveRow)
+  const memberId = liveRow?.member.id
 
   useEffect(() => {
-    if (!row) return
-    setAmount(row.remaining > 0 ? String(row.remaining) : '')
+    if (!liveRow) return
+    setAmount(liveRow.remaining > 0 ? String(liveRow.remaining) : '')
     setDate(todayIso())
     setMethod(lastMethod())
     setReference('')
@@ -101,11 +104,18 @@ export function ContributionModal({
   }
 
   const entry = (c: Contribution, voided: boolean) => (
-    <li key={c.id} className="flex items-center gap-3 px-3.5 py-2.5">
+    <li key={c.id} className="flex items-center gap-3 px-4 py-3">
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+          voided ? 'bg-ink-100 text-ink-400' : c.method === 'deduction' ? 'bg-gold-100 text-gold-700' : 'bg-brand-50 text-brand-600'
+        }`}
+      >
+        <Icon name={voided ? 'ban' : c.method === 'deduction' ? 'gift' : 'check'} size={14} />
+      </span>
       <div className="min-w-0 flex-1">
-        <p className={`num font-bold ${voided ? 'text-ink-400 line-through' : 'text-ink-800'}`}>
-          {formatMoney(c.amount)}{' '}
-          <Badge tone={c.method === 'deduction' ? 'gold' : 'gray'} className="ml-1 align-middle no-underline">
+        <p className={`num flex items-center gap-2 font-bold ${voided ? 'text-ink-400 line-through' : 'text-ink-900'}`}>
+          {formatMoney(c.amount)}
+          <Badge tone={c.method === 'deduction' ? 'gold' : 'gray'} className="no-underline">
             {methodLabels[c.method] ?? c.method}
           </Badge>
         </p>
@@ -125,32 +135,46 @@ export function ContributionModal({
     </li>
   )
 
+  const formId = `contribution-${row.member.id}-${period}`
+  const fullyPaid = row.remaining <= 0
+
   return (
     <Modal
-      open
+      open={!!liveRow}
       onClose={onClose}
       title={row.member.name}
       subtitle={`Month ${period} · ${periodLabel(partner.start_date, period)} · ${formatMoney(row.due)} due`}
+      footer={
+        <Button type="submit" form={formId} loading={saving} disabled={!(Number(amount) > 0)} className="w-full" variant={fullyPaid ? 'secondary' : 'primary'}>
+          <Icon name="plus" size={16} /> {fullyPaid ? 'Record an extra payment' : 'Record payment'}
+        </Button>
+      }
     >
-      <div className="mb-5 grid grid-cols-2 gap-2 text-center">
-        <div className="rounded-2xl bg-brand-50 p-3">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Paid</p>
-          <p className="num text-lg font-extrabold text-brand-800">{formatMoney(row.paid)}</p>
+      <div className="mb-5 grid grid-cols-2 gap-2.5">
+        <div className="rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-600/10">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-brand-600">Paid</p>
+          <p className="num mt-0.5 text-xl font-extrabold text-brand-800">{formatMoney(row.paid)}</p>
         </div>
-        <div className={`rounded-2xl p-3 ${row.remaining > 0 ? 'bg-amber-50' : 'bg-ink-50'}`}>
-          <p className={`text-[11px] font-bold uppercase tracking-wider ${row.remaining > 0 ? 'text-amber-600' : 'text-ink-400'}`}>Remaining</p>
-          <p className={`num text-lg font-extrabold ${row.remaining > 0 ? 'text-amber-700' : 'text-ink-400'}`}>{formatMoney(row.remaining)}</p>
+        <div className={`rounded-2xl p-4 ring-1 ring-inset ${row.remaining > 0 ? 'bg-amber-50 ring-amber-600/15' : 'bg-ink-50 ring-ink-900/[0.04]'}`}>
+          <p className={`text-[11px] font-bold uppercase tracking-[0.12em] ${row.remaining > 0 ? 'text-amber-700' : 'text-ink-400'}`}>Remaining</p>
+          <p className={`num mt-0.5 text-xl font-extrabold ${row.remaining > 0 ? 'text-amber-800' : 'text-ink-400'}`}>
+            {row.remaining > 0 ? formatMoney(row.remaining) : 'Settled'}
+          </p>
         </div>
       </div>
 
       {row.entries.length + row.voided.length > 0 && (
-        <ul className="mb-5 divide-y divide-ink-100 rounded-2xl ring-1 ring-ink-100">
-          {row.entries.map((c) => entry(c, false))}
-          {row.voided.map((c) => entry(c, true))}
-        </ul>
+        <>
+          <p className="eyebrow mb-2 px-1">This month’s payments</p>
+          <ul className="mb-5 divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
+            {row.entries.map((c) => entry(c, false))}
+            {row.voided.map((c) => entry(c, true))}
+          </ul>
+        </>
       )}
 
-      <form onSubmit={add} className="space-y-3">
+      <form id={formId} onSubmit={add} className="space-y-3.5 pb-2">
+        <p className="eyebrow px-1">{fullyPaid ? 'Add a payment' : 'Record a payment'}</p>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Amount">
             <MoneyInput value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required />
@@ -163,9 +187,6 @@ export function ContributionModal({
         <Field label="Note (optional)">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Paid at the station…" maxLength={200} />
         </Field>
-        <Button type="submit" loading={saving} disabled={!(Number(amount) > 0)} className="w-full">
-          <Icon name="plus" size={16} /> Record payment
-        </Button>
       </form>
 
       <VoidDialog open={!!voiding} title="Void this payment?" confirmLabel="Void payment" onClose={() => setVoiding(null)} onConfirm={voidEntry}>

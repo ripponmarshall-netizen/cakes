@@ -59,6 +59,43 @@ export function ownerResolver(members: Member[]): (memberId: string) => string {
   }
 }
 
+/**
+ * Who sits in each member's draw seat now: follows every replacement (buy-out
+ * or refund) to the active member. replace_member hands the old member's slots
+ * to the new one, so a stale id in the stored order still means that seat.
+ */
+function seatHolder(members: Member[]): (memberId: string) => string {
+  const byId = new Map(members.map((m) => [m.id, m]))
+  return (id) => {
+    let cur = id
+    const seen = new Set<string>()
+    for (;;) {
+      const m = byId.get(cur)
+      if (!m || !m.replaced_by || seen.has(cur)) return cur
+      seen.add(cur)
+      cur = m.replaced_by
+    }
+  }
+}
+
+/**
+ * When a member's seat was first taken: their own join time, or that of the
+ * member they replaced. Keeps a replacement in the old member's place even if
+ * the draw order was never saved.
+ */
+function seatJoined(members: Member[]): (m: Member) => string {
+  const predecessor = new Map(members.filter((m) => m.replaced_by).map((m) => [m.replaced_by as string, m]))
+  return (m) => {
+    let earliest = m.created_at
+    const seen = new Set<string>()
+    for (let p = predecessor.get(m.id); p && !seen.has(p.id); p = predecessor.get(p.id)) {
+      seen.add(p.id)
+      if (p.created_at < earliest) earliest = p.created_at
+    }
+    return earliest
+  }
+}
+
 // ─── Dates & periods ────────────────────────────────────────────────────────
 
 function parseIsoDate(iso: string): { y: number; m: number; d: number } {
@@ -163,12 +200,15 @@ export function effectiveDrawOrder(members: Member[], stored: string[]): SlotSpe
   const active = members.filter(isActive)
   const remaining = new Map(active.map((m) => [m.id, halvesOf(m)]))
   const left = (id: string) => remaining.get(id) ?? 0
+  const holder = seatHolder(members)
   const specs: SlotSpec[] = []
 
   for (const raw of stored ?? []) {
     const parsed = parseEntry(raw)
-    // Ids of members who left or were removed drop out first.
-    const s = { ...parsed, ids: parsed.ids.filter((id) => remaining.has(id)) }
+    // A replaced member's seat belongs to whoever took over; ids of members
+    // who were removed drop out.
+    const ids = [...new Set(parsed.ids.map(holder))]
+    const s = { ...parsed, ids: ids.filter((id) => remaining.has(id)) }
     if (s.ids.length === 0) continue
     if (!s.half) {
       const id = s.ids[0]
@@ -213,8 +253,11 @@ export function effectiveDrawOrder(members: Member[], stored: string[]): SlotSpe
     specs.splice(specs.indexOf(lones[1]), 1)
   }
 
-  // Append missing hands in join order; a new half pairs with any waiting half.
-  for (const m of [...active].sort(byCreated)) {
+  // Append missing hands in join order (a replacement keeps the seat it took
+  // over); a new half pairs with any waiting half.
+  const joined = seatJoined(members)
+  const bySeat = (a: Member, b: Member) => joined(a).localeCompare(joined(b)) || byCreated(a, b)
+  for (const m of [...active].sort(bySeat)) {
     let r = left(m.id)
     for (; r >= 2; r -= 2) specs.push({ ids: [m.id], half: false })
     if (r === 1) {
