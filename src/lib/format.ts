@@ -1,4 +1,5 @@
 import { periodStartDate } from './calc'
+import type { PaymentMethod, PayoutMethod } from './types'
 
 const whole = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 const cents = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -47,4 +48,37 @@ export function initials(name: string): string {
 
 export function plural(n: number, word: string, pluralWord = `${word}s`): string {
   return `${n} ${n === 1 ? word : pluralWord}`
+}
+
+/** "½ hand", "1 hand", "1½ hands", "2 hands". */
+export function formatHands(hands: number): string {
+  const n = Math.round((Number(hands) || 0) * 2) / 2
+  const whole = Math.floor(n)
+  const half = n - whole === 0.5
+  const body = whole === 0 ? (half ? '½' : '0') : `${whole}${half ? '½' : ''}`
+  return `${body} ${n <= 1 ? 'hand' : 'hands'}`
+}
+
+export const methodLabels: Record<PaymentMethod, string> = {
+  cash: 'Cash',
+  transfer: 'Bank transfer',
+  lynk: 'Lynk',
+  deduction: 'Taken from draw',
+  other: 'Other',
+}
+
+/** Methods the banker can pick when recording money ("deduction" is set by the app). */
+export const pickableMethods: PayoutMethod[] = ['cash', 'transfer', 'lynk', 'other']
+
+/** Read-only statement link for a member. Works on GitHub Pages' sub-path. */
+export function statementUrl(token: string): string {
+  return `${window.location.origin}${import.meta.env.BASE_URL}#/s/${token}`
+}
+
+/** "Months 2–4" / "Month 3" / "Months 1, 3". */
+export function monthsLabel(periods: number[]): string {
+  if (periods.length === 0) return ''
+  if (periods.length === 1) return `Month ${periods[0]}`
+  const contiguous = periods.every((p, i) => i === 0 || p === periods[i - 1] + 1)
+  return contiguous ? `Months ${periods[0]}–${periods[periods.length - 1]}` : `Months ${periods.join(', ')}`
 }

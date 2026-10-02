@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { readCache, writeCache } from '../lib/cache'
 import { supabase } from '../lib/supabase'
 
 interface Options {
@@ -10,6 +11,8 @@ interface Options {
 /**
  * Loads a table and keeps it fresh with Supabase Realtime. Any change refetches
  * the (small) result set, which keeps ordering and joins trivially correct.
+ * The last good result is cached on the device, so the app opens offline and
+ * shows the saved copy until the network is back.
  */
 export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' }: Options = {}) {
   const [rows, setRows] = useState<T[]>([])
@@ -19,6 +22,7 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
   const value = filter?.value
   const skip = filter !== undefined && !value
   const requestId = useRef(0)
+  const cacheKey = `${table}:${column ?? 'all'}:${value ?? ''}`
 
   const load = useCallback(async () => {
     if (skip) return
@@ -27,13 +31,16 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
     if (column && value) query = query.eq(column, value)
     const { data, error } = await query
     if (id !== requestId.current) return // a newer load superseded this one
-    if (error) setError(error.message)
-    else {
+    if (error) {
+      // Offline with a cached copy: keep showing it; the banner explains why.
+      if (!(navigator.onLine === false && readCache(cacheKey))) setError(error.message)
+    } else {
       setError(null)
       setRows((data ?? []) as T[])
+      writeCache(cacheKey, data ?? [])
     }
     setLoading(false)
-  }, [table, orderBy, column, value, skip])
+  }, [table, orderBy, column, value, skip, cacheKey])
 
   useEffect(() => {
     if (skip) {
@@ -41,8 +48,11 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
       setLoading(false)
       return
     }
-    setLoading(true)
+    const cached = readCache<T[]>(cacheKey)
+    if (cached) setRows(cached)
+    setLoading(!cached)
     load()
+    window.addEventListener('online', load)
     const channel = supabase
       .channel(`${table}:${column ?? 'all'}:${value ?? ''}:${Math.random().toString(36).slice(2)}`)
       .on(
@@ -52,9 +62,10 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
       )
       .subscribe()
     return () => {
+      window.removeEventListener('online', load)
       supabase.removeChannel(channel)
     }
-  }, [load, table, column, value, skip])
+  }, [load, table, column, value, skip, cacheKey])
 
   return { rows, loading, error, reload: load }
 }

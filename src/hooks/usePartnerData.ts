@@ -2,8 +2,20 @@ import { useCallback, useMemo } from 'react'
 import { useLiveTable } from './useLiveTable'
 import type { Contribution, Member, Partner, Payout } from '../lib/types'
 
-export function usePartners() {
-  return useLiveTable<Partner>('partners')
+/** Every partner with all its rows — for the home dashboard and full backups. */
+export function useLedger() {
+  const partners = useLiveTable<Partner>('partners')
+  const members = useLiveTable<Member>('members')
+  const contributions = useLiveTable<Contribution>('contributions')
+  const payouts = useLiveTable<Payout>('payouts')
+  return {
+    partners: partners.rows,
+    members: members.rows,
+    contributions: contributions.rows,
+    payouts: payouts.rows,
+    loading: partners.loading || members.loading || contributions.loading || payouts.loading,
+    error: partners.error || members.error || contributions.error || payouts.error,
+  }
 }
 
 /** Everything needed to render one partner, all kept live. */

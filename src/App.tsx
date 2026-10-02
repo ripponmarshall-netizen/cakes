@@ -6,6 +6,8 @@ import { AccessGate } from './components/AccessGate'
 import { Header } from './components/Header'
 import { PartnerList } from './components/partner/PartnerList'
 import { PartnerView } from './components/partner/PartnerView'
+import { PublicStatement } from './components/PublicStatement'
+import { OfflineBanner } from './components/OfflineBanner'
 import { Spinner } from './components/ui/Spinner'
 
 export default function App() {
@@ -13,6 +15,8 @@ export default function App() {
   const admin = useAdmin(session?.user.id)
   const { route, navigate } = useHashRoute()
 
+  // Members' statement links work without an account.
+  if (route.name === 'statement') return <PublicStatement token={route.token} />
   if (loading || (session && admin.state === 'checking')) return <Spinner fullScreen />
   if (!session) return <AuthScreen />
   if (admin.state !== 'admin') return <AccessGate admin={admin} />
@@ -20,6 +24,7 @@ export default function App() {
   return (
     <div className="min-h-screen pb-20">
       <Header onHome={route.name === 'partner' ? () => navigate({ name: 'home' }) : undefined} />
+      <OfflineBanner />
       <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
         {route.name === 'partner' ? (
           <PartnerView key={route.id} partnerId={route.id} onGone={() => navigate({ name: 'home' })} />
