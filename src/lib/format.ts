@@ -12,6 +12,16 @@ export function formatMoney(amount: number | null | undefined): string {
   return `${value < 0 ? '−' : ''}J$${body}`
 }
 
+/** Short form for tight spaces: "J$710k", "J$1.25M"; small amounts as usual. */
+export function formatMoneyShort(amount: number): string {
+  const abs = Math.abs(amount)
+  const sign = amount < 0 ? '−' : ''
+  const trim = (n: number, digits: number) => n.toFixed(digits).replace(/\.?0+$/, '')
+  if (abs >= 1_000_000) return `${sign}J$${trim(abs / 1_000_000, 2)}M`
+  if (abs >= 10_000) return `${sign}J$${trim(abs / 1_000, 1)}k`
+  return formatMoney(amount)
+}
+
 /** "Mar 2026" for the month a period starts in. */
 export function periodLabel(startIso: string, period: number): string {
   return periodStartDate(startIso, period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -81,4 +91,24 @@ export function monthsLabel(periods: number[]): string {
   if (periods.length === 1) return `Month ${periods[0]}`
   const contiguous = periods.every((p, i) => i === 0 || p === periods[i - 1] + 1)
   return contiguous ? `Months ${periods[0]}–${periods[periods.length - 1]}` : `Months ${periods.join(', ')}`
+}
+
+/** "Jul–Aug" / "Jul" / "Jul, Sep": the months of the given periods, short. */
+export function monthNames(startIso: string, periods: number[]): string {
+  const short = (p: number) => periodStartDate(startIso, p).toLocaleDateString('en-US', { month: 'short' })
+  if (periods.length === 0) return ''
+  if (periods.length === 1) return short(periods[0])
+  const contiguous = periods.every((p, i) => i === 0 || p === periods[i - 1] + 1)
+  return contiguous ? `${short(periods[0])}–${short(periods[periods.length - 1])}` : periods.map(short).join(', ')
+}
+
+/** "today", "yesterday", "3 days ago", then "Sep 12" — for when something last happened. */
+export function timeAgo(iso: string, now: Date = new Date()): string {
+  const then = new Date(iso)
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const days = Math.round((day(now) - day(then)) / 86_400_000)
+  if (days <= 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days} days ago`
+  return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(then.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) })
 }

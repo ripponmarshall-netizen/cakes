@@ -117,7 +117,7 @@ export function ReplaceMemberModal({
           </Field>
         </div>
 
-        <Field label="How is it settled?">
+        <Field label="How is it settled?" group>
           <Segmented
             value={mode}
             onChange={setMode}

@@ -4,13 +4,18 @@ import { Icon, type IconName } from './Icon'
 const fieldBase =
   'w-full rounded-2xl border-0 bg-ink-50/70 px-4 py-3 text-[15px] text-ink-900 ring-1 ring-inset ring-ink-200/80 placeholder:text-ink-300 transition duration-200 hover:ring-ink-300 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 disabled:bg-ink-50 disabled:text-ink-400'
 
-export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+/**
+ * A labelled form control. Pass `group` when the child is a set of buttons
+ * (Segmented): a <label> would pass taps on its text to the first button.
+ */
+export function Field({ label, hint, group, children }: { label: string; hint?: ReactNode; group?: boolean; children: ReactNode }) {
+  const Tag = group ? 'div' : 'label'
   return (
-    <label className="block">
+    <Tag className="block" {...(group ? { role: 'group', 'aria-label': label } : {})}>
       <span className="mb-1.5 block text-[13px] font-semibold text-ink-600">{label}</span>
       {children}
       {hint && <span className="mt-1.5 block text-xs leading-relaxed text-ink-400">{hint}</span>}
-    </label>
+    </Tag>
   )
 }
 
@@ -127,11 +132,12 @@ export function Segmented<T extends string>({
             onChange(next.value)
             ;(wrap.current?.children[options.indexOf(next) + 1] as HTMLElement | undefined)?.focus()
           }}
-          className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${
+          className={`relative z-10 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 min-[360px]:px-3 ${
             size === 'lg' ? 'py-2.5 text-sm' : 'py-2 text-[13px]'
           } ${value === o.value ? 'text-ink-900' : 'text-ink-500 hover:text-ink-700'}`}
         >
-          {o.icon && <Icon name={o.icon} size={16} className={value === o.value ? 'text-brand-600' : ''} />}
+          {/* Icons give way on the narrowest phones (320px) so the labels fit. */}
+          {o.icon && <Icon name={o.icon} size={16} className={`shrink-0 max-[359px]:hidden ${value === o.value ? 'text-brand-600' : ''}`} />}
           {o.label}
           {!!o.badge && (
             <span className="num min-w-[1.25rem] rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-[1.15rem] text-white">{o.badge}</span>

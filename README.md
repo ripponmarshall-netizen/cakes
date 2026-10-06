@@ -39,21 +39,29 @@ tests in `calc.test.ts` (`npm test`).
 
 - **Home dashboard** — across every partner: cash in the pots, owed now, money
   at risk, fees earned and to come, draws due this week, and who's behind.
-- **Payments** — month-by-month checklist. *Mark paid* in one tap, *Mark all
-  paid*, or record part payments with method (cash / bank transfer / Lynk /
-  other), reference, date and note. One-tap WhatsApp nudge for anyone unpaid.
+- **Payments** — month-by-month checklist. *Mark paid* in one tap (with
+  **Undo** and a WhatsApp **receipt** on the confirmation), *Mark all paid*,
+  or record part payments with method (cash / bank transfer / Lynk / other),
+  reference, date and note. Each row shows earlier months still owed. One-tap
+  WhatsApp nudge for anyone unpaid.
 - **Members** — whole or half hands, what they've paid, behind/ahead, what
   they'll receive, draw months, and an **at-risk** flag once they've drawn.
-- **Draws** — the full schedule, with shared half-hand slots. Reorder with
-  arrows, *Draw lots* to shuffle the unpaid draws, *Pay* to record a payout
-  (fee pre-filled). If the member is behind you're warned and can **take the
-  arrears out of the draw**.
+- **Draws** — the full schedule, with shared half-hand slots. Tap a month to
+  **move a draw to any open position** (or use the arrows), *Draw lots* to
+  shuffle the unpaid draws, *Pay* to record a payout (fee pre-filled). If the
+  member is behind you're warned and can **take the arrears out of the draw**
+  — the draw and the arrears are saved together, in one transaction.
 - **No deleting money** — payments and payouts are *voided* with a reason, not
   deleted, and amounts can't be edited. Every change lands in an **audit log**
   (*History*) written by the database, with who did it and when.
 - **Reminders & statements** — *Remind* steps through everyone behind with a
   pre-written WhatsApp message (`wa.me` link; Jamaican numbers normalised to
-  1-876). Each member has a printable statement (Print / Save as PDF).
+  1-876). Every reminder is logged ("last reminded 3 days ago"). Each member
+  has a printable statement (Print / Save as PDF). Add **how members pay you**
+  (Lynk handle, bank account) in partner settings and it appears on their
+  statement and in reminders.
+- **Cash count** — count the box, enter it, and see straight away whether
+  it's over or short of what the ledger says. Every count is kept.
 - **Member links** — each member gets a private read-only link
   (`#/s/<token>`, no sign-in) showing only their own payments and draws.
   Optionally also the full draw order with names (partner setting). Links can
@@ -64,8 +72,17 @@ tests in `calc.test.ts` (`npm test`).
 - **Export & backup** — per-partner CSVs (transactions, members) and a full JSON
   backup of everything, including the audit log.
 - **Installable & offline** — a PWA: add it to your home screen. Offline it
-  opens with the last data loaded on that phone (read-only); changes need a
-  connection.
+  opens with the last data loaded on that phone, and **payments, payouts,
+  voids and cash counts are saved on the phone and sync when the signal is
+  back** (the banner shows how many are waiting). Settings, members and the
+  draw order still need a connection.
+- **Can't record twice** — every payment gets its id on the phone and the
+  server ignores ids it already has, so a double tap or a retry on a bad
+  connection records it once.
+- **Next round** — when a cycle ends, start the next one with the same
+  members and settings in one step.
+- **Bankers** — tap your initials (top right) to add or remove co-bankers by
+  email.
 - **Several partners** side by side, each with its own settings.
 - **Realtime sync** between bankers' devices.
 
@@ -79,6 +96,14 @@ Run the migrations in order in the Supabase SQL editor (or `supabase db push`):
 2. [`20261003000000_ledger_v2.sql`](supabase/migrations/20261003000000_ledger_v2.sql) — half hands,
    payment methods, voiding + audit log, member replacement, statement links.
    Safe to run on existing data and safe to re-run.
+3. [`20261006000000_ledger_v3.sql`](supabase/migrations/20261006000000_ledger_v3.sql) — retry-safe
+   payouts (`record_payout`), cash counts, the reminder log, starting the next
+   round, managing bankers in the app, and payment details on statements.
+   Safe to re-run.
+
+> **Run each migration before deploying the app version that needs it.**
+> The app from v3 on records draws through `record_payout`; on a database
+> without it, payouts are refused (and say so).
 
 They're additive — they don't touch the old `cake_items` / `orders` tables.
 
@@ -101,7 +126,8 @@ Create an account (invite code from `VITE_SIGNUP_INVITE_CODE`), then click
 account sees "Waiting for access" and can read nothing — enforced by Row Level
 Security, not by the UI.
 
-To add a co-banker after they've signed up, run in the SQL editor:
+To add a co-banker after they've signed up, tap your initials (top right) →
+**Add a co-banker**. Or, in the SQL editor:
 
 ```sql
 insert into public.app_admins (user_id)
@@ -130,14 +156,17 @@ Variables if needed.
 ```
 src/
   lib/          calc.ts (all money maths), format.ts, types.ts, supabase.ts,
-                whatsapp.ts, csv.ts, cache.ts (offline copy)
+                whatsapp.ts, csv.ts, cache.ts (offline copy), outbox.ts
+                (queued, retry-safe writes), ledgerWrites.ts, rounds.ts
   hooks/        useLiveTable (realtime), usePartnerData, useAdmin, useHashRoute
   components/
-    AuthScreen, AccessGate, Header, Logo, PublicStatement, OfflineBanner
+    AuthScreen, AccessGate, Header, Logo, PublicStatement, OfflineBanner,
+    BankersModal
     partner/    PartnerList (dashboard), PartnerView, PaymentsTab, MembersTab,
                 DrawsTab, PartnerForm, MemberModal, ContributionModal,
                 PayoutModal, StatementView/Modal, ReplaceMemberModal,
-                RemindModal, HistoryModal, ExportModal, VoidDialog
+                RemindModal, HistoryModal, ExportModal, VoidDialog,
+                CashCountModal, NextRoundModal
     ui/         Button, Input, Modal, Confirm, Toast, Badge, Icon, …
 supabase/migrations/   schema + RLS
 ```

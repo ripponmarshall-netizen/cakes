@@ -46,6 +46,13 @@ export function StatementView({
         <Box label="Received" value={formatMoney(m.received)} sub={m.toReceive > 0 ? `${formatMoney(m.toReceive)} to come` : undefined} />
       </div>
 
+      {partner.pay_details?.trim() && (
+        <section className="rounded-2xl bg-gold-50/70 px-4 py-3 ring-1 ring-inset ring-gold-500/20">
+          <h3 className="eyebrow mb-1 !text-gold-700">How to pay</h3>
+          <p className="whitespace-pre-line text-sm font-semibold text-ink-800">{partner.pay_details.trim()}</p>
+        </section>
+      )}
+
       <section>
         <h3 className="eyebrow mb-2">Draws</h3>
         <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
@@ -61,7 +68,9 @@ export function StatementView({
                     ✓ {formatMoney(s.payout.net)} on {formatDate(s.payout.paid_on)}
                   </span>
                 ) : (
-                  <span className="text-ink-500">{formatMoney(s.net)} · {s.period < summary.rawPeriod ? 'due' : 'upcoming'}</span>
+                  <span className="text-ink-500">
+                    {formatMoney(s.net)} · {s.period < summary.rawPeriod ? 'due' : s.period === summary.rawPeriod ? 'this month' : 'upcoming'}
+                  </span>
                 )}
               </span>
             </li>

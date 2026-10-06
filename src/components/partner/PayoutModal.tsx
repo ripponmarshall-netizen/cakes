@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { supabase } from '../../lib/supabase'
+import { logMessage, outcomeMessage, recordPayout } from '../../lib/ledgerWrites'
+import { normalizePhone, payoutReceiptMessage, waLink } from '../../lib/whatsapp'
+import { useAuth } from '../../context/AuthContext'
 import { arrearsByPeriod, toCents, type DrawShare } from '../../lib/calc'
 import { formatMoney, monthsLabel, periodLabel, todayIso } from '../../lib/format'
 import type { PayoutMethod } from '../../lib/types'
@@ -20,8 +22,9 @@ import { useLast } from '../../hooks/usePresence'
  * they get the rest in hand.
  */
 export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCtx; share: DrawShare | null; onClose: () => void }) {
-  const { partner, members, contributions, summary, refresh } = ctx
+  const { partner, members, contributions, summary } = ctx
   const { toast } = useToast()
+  const { profile } = useAuth()
   const [gross, setGross] = useState('')
   const [fee, setFee] = useState('')
   const [date, setDate] = useState(todayIso())
@@ -29,7 +32,6 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
   const [reference, setReference] = useState('')
   const [note, setNote] = useState('')
   const [deduct, setDeduct] = useState(true)
-  const [saving, setSaving] = useState(false)
   const share = useLast(liveShare)
   const shareKey = liveShare ? `${liveShare.slotIndex}:${liveShare.memberId}` : null
 
@@ -78,45 +80,48 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (!valid || !share || !member) return
-    setSaving(true)
-    const { error } = await supabase.from('payouts').insert({
-      partner_id: partner.id,
-      member_id: member.id,
-      period: share.period,
-      gross: grossN,
-      fee: feeN,
-      paid_on: date,
-      method,
-      ref: reference.trim() || null,
-      note: note.trim() || null,
-    })
-    if (error) {
-      setSaving(false)
-      return toast(error.message, 'error')
-    }
-    if (deductions.length) {
-      const { error: err2 } = await supabase.from('contributions').insert(
-        deductions.map((d) => ({
-          partner_id: partner.id,
-          member_id: member.id,
-          period: d.period,
-          amount: d.cents / 100,
-          paid_on: date,
-          method: 'deduction',
-          note: `Taken from month ${share.period} draw`,
-        })),
-      )
-      if (err2) {
-        setSaving(false)
-        refresh()
-        return toast(`Draw recorded, but the arrears weren’t: ${err2.message}. Record them in Payments.`, 'error')
-      }
-    }
-    setSaving(false)
+    // One transaction on the server: the draw and the arrears taken out of it
+    // are saved together or not at all, and a retry can't save them twice.
+    const handed = handOverC / 100
+    const written = recordPayout(
+      {
+        partner_id: partner.id,
+        member_id: member.id,
+        period: share.period,
+        gross: grossN,
+        fee: feeN,
+        paid_on: date,
+        method,
+        ref: reference.trim() || null,
+        note: note.trim() || null,
+      },
+      deductions.map((d) => ({ period: d.period, amount: d.cents / 100, note: `Taken from month ${share.period} draw` })),
+      `Draw for ${member.name}`,
+    )
     rememberMethod(method, 'payout')
-    refresh()
-    toast(`${formatMoney(handOverC / 100)} paid to ${member.name}`)
+    const receipt = payoutReceiptMessage(
+      partner,
+      member.name,
+      { period: share.period, gross: grossN, fee: feeN, arrears: deductC / 100, handed, paid_on: date },
+      profile?.display_name,
+    )
+    const phone = member.phone
+    toast(`${formatMoney(handed)} paid to ${member.name}`, 'success', {
+      actions: normalizePhone(phone)
+        ? [
+            {
+              label: 'Receipt',
+              onClick: () => {
+                window.open(waLink(phone, receipt), '_blank', 'noreferrer')
+                logMessage(partner.id, member.id, 'receipt')
+              },
+            },
+          ]
+        : [],
+    })
     onClose()
+    const msg = outcomeMessage(await written.done)
+    if (msg) toast(msg.text, msg.tone)
   }
 
   const handLabel = share.half ? ' · ½ hand' : Number(member.hands) > 1 ? ` · hand ${share.handNo}` : ''
@@ -132,7 +137,7 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
           <Button variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="payout-form" variant="gold" className="flex-1" loading={saving} disabled={!valid}>
+          <Button type="submit" form="payout-form" variant="gold" className="flex-1" disabled={!valid}>
             Record payout
           </Button>
         </div>

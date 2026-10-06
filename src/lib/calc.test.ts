@@ -26,6 +26,7 @@ const partner = (over: Partial<Partner> = {}): Partner => ({
   fee_value: 2000,
   draw_order: [],
   share_schedule: false,
+  pay_details: null,
   notes: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',

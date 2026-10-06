@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Contribution, Member, Partner, Payout } from '../../lib/types'
+import type { CashCount, Contribution, Member, Partner, Payout, Reminder } from '../../lib/types'
 import type { PartnerSummary } from '../../lib/calc'
 import { initials } from '../../lib/format'
 
@@ -9,8 +9,17 @@ export interface PartnerCtx {
   members: Member[]
   contributions: Contribution[]
   payouts: Payout[]
+  reminders: Reminder[]
+  cashCounts: CashCount[]
   summary: PartnerSummary
-  refresh: () => void
+  refresh: () => Promise<void>
+}
+
+/** When a member was last sent a WhatsApp reminder, if ever. */
+export function lastReminded(reminders: Reminder[], memberId: string): string | null {
+  let last: string | null = null
+  for (const r of reminders) if (r.member_id === memberId && r.kind === 'reminder' && (!last || r.created_at > last)) last = r.created_at
+  return last
 }
 
 // Muted, harmonised tints: deep text on a soft wash of the same hue.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatHands, formatMoney, monthsLabel } from './format'
+import { formatHands, formatMoney, formatMoneyShort, monthsLabel } from './format'
 
 describe('formatHands', () => {
   it('uses the singular only for a half or one hand', () => {
@@ -25,5 +25,15 @@ describe('monthsLabel', () => {
     expect(monthsLabel([3])).toBe('Month 3')
     expect(monthsLabel([3, 4, 5])).toBe('Months 3–5')
     expect(monthsLabel([1, 3])).toBe('Months 1, 3')
+  })
+})
+
+describe('formatMoneyShort', () => {
+  it('shortens thousands and millions, keeps small amounts exact', () => {
+    expect(formatMoneyShort(710000)).toBe('J$710k')
+    expect(formatMoneyShort(12500)).toBe('J$12.5k')
+    expect(formatMoneyShort(1250000)).toBe('J$1.25M')
+    expect(formatMoneyShort(-10000)).toBe('−J$10k')
+    expect(formatMoneyShort(5000)).toBe('J$5,000')
   })
 })

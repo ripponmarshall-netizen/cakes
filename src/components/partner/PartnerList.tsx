@@ -3,9 +3,9 @@ import { useAuth } from '../../context/AuthContext'
 import { useLedger } from '../../hooks/usePartnerData'
 import { drawsDueSoon, summarizePartner, toCents, type PartnerSummary } from '../../lib/calc'
 import { downloadFile } from '../../lib/csv'
-import { formatDate, formatMoney, periodLabel, plural, todayIso } from '../../lib/format'
+import { formatDate, formatMoney, formatMoneyShort, periodLabel, plural, todayIso } from '../../lib/format'
 import { firstName } from '../../lib/whatsapp'
-import { supabase } from '../../lib/supabase'
+import { fetchAll } from '../../lib/fetchAll'
 import type { Partner } from '../../lib/types'
 import { useToast } from '../ui/Toast'
 import { Button } from '../ui/Button'
@@ -35,6 +35,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
   const { toast } = useToast()
   const [creating, setCreating] = useState(false)
   const [backingUp, setBackingUp] = useState(false)
+  const [allOwing, setAllOwing] = useState(false)
 
   const rows: Row[] = useMemo(
     () =>
@@ -80,9 +81,9 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
 
   async function backup() {
     setBackingUp(true)
-    const { data: audit, error } = await supabase.from('audit_log').select('*').order('id')
+    const [audit, reminders, cashCounts] = await Promise.all([fetchAll('audit_log'), fetchAll('reminders', 'created_at'), fetchAll('cash_counts', 'created_at')])
     setBackingUp(false)
-    if (error) toast(`Backup saved without history: ${error.message}`, 'error')
+    if (audit.error) toast(`Backup saved without history: ${audit.error}`, 'error')
     const payload = {
       app: 'partner-ledger',
       exported_at: new Date().toISOString(),
@@ -90,7 +91,9 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
       members: ledger.members,
       contributions: ledger.contributions,
       payouts: ledger.payouts,
-      audit_log: audit ?? [],
+      cash_counts: cashCounts.data,
+      reminders: reminders.data,
+      audit_log: audit.data,
     }
     downloadFile(`partner-ledger-backup-${todayIso()}.json`, JSON.stringify(payload, null, 2), 'application/json')
   }
@@ -158,7 +161,12 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
               </p>
               <AnimatedMoney value={totals.pot} className="mt-2 block font-display text-[2.6rem] font-semibold leading-none sm:text-5xl" />
               <p className="num mt-3 text-sm text-brand-100/85">
-                {totals.behind > 0 ? (
+                {totals.pot < 0 || rows.some((r) => r.summary.pot < 0) ? (
+                  <span className="inline-flex items-start gap-1.5 font-semibold text-rose-200">
+                    <Icon name="alert" size={14} className="mt-0.5 shrink-0 text-rose-300" />
+                    {plural(rows.filter((r) => r.summary.pot < 0).length, 'pot is', 'pots are')} below zero — more paid out than collected
+                  </span>
+                ) : totals.behind > 0 ? (
                   <>
                     Should be <span className="font-semibold text-gold-200">{formatMoney(totals.potIfPaidUp)}</span> · {formatMoney(totals.behind)} still owed
                   </>
@@ -207,7 +215,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
 
               {owing.length > 0 && (
                 <AttentionGroup icon="alert" title="Behind on payments" tone="rose">
-                  {owing.slice(0, 8).map(({ partner, m }) => (
+                  {(allOwing ? owing : owing.slice(0, 8)).map(({ partner, m }) => (
                     <AttentionRow
                       key={m.member.id}
                       onClick={() => onOpen(partner.id)}
@@ -223,7 +231,13 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
                     />
                   ))}
                   {owing.length > 8 && (
-                    <p className="px-5 pb-1 pt-2 text-xs text-ink-400">+ {owing.length - 8} more — open a partner and tap Remind.</p>
+                    <button
+                      type="button"
+                      onClick={() => setAllOwing((v) => !v)}
+                      className="mx-5 mt-1 rounded-lg px-1 py-1.5 text-xs font-bold text-brand-700 hover:underline"
+                    >
+                      {allOwing ? 'Show fewer' : `Show all ${owing.length}`}
+                    </button>
                   )}
                 </AttentionGroup>
               )}
@@ -275,7 +289,8 @@ function HeroStat({ label, value, sub, tone }: { label: string; value: number; s
         <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
         {label}
       </p>
-      <AnimatedMoney value={value} className="mt-1 block truncate text-[15px] font-bold sm:text-lg" />
+      <AnimatedMoney value={value} className="mt-1 block truncate text-[15px] font-bold max-[359px]:hidden sm:text-lg" />
+      <span className="num mt-1 block truncate text-[15px] font-bold min-[360px]:hidden">{formatMoneyShort(value)}</span>
       {sub && <p className="num truncate text-[11px] text-brand-100/60">{sub}</p>}
     </div>
   )
@@ -341,7 +356,7 @@ function PartnerCard({ row, index, onOpen }: { row: Row; index: number; onOpen: 
       <div className="mt-5 flex items-end justify-between gap-3">
         <div>
           <p className="eyebrow">In the pot</p>
-          <p className="num mt-0.5 text-2xl font-extrabold tracking-tight text-ink-900">{formatMoney(s.pot)}</p>
+          <p className={`num mt-0.5 text-2xl font-extrabold tracking-tight ${s.pot < 0 ? 'text-rose-700' : 'text-ink-900'}`}>{formatMoney(s.pot)}</p>
         </div>
         <Icon name="arrow-right" size={18} className="mb-1.5 text-ink-300 transition duration-300 group-hover:translate-x-1 group-hover:text-brand-600" />
       </div>
@@ -350,8 +365,9 @@ function PartnerCard({ row, index, onOpen }: { row: Row; index: number; onOpen: 
         <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400 transition-[width] duration-700 ease-out" style={{ width: `${progress * 100}%` }} />
       </div>
 
-      {(s.behind > 0 || s.exposure > 0) && (
+      {(s.behind > 0 || s.exposure > 0 || s.pot < 0) && (
         <div className="mt-3 flex flex-wrap gap-1.5">
+          {s.pot < 0 && <Badge tone="red">Pot below zero</Badge>}
           {s.behind > 0 && <Badge tone="amber">Owed {formatMoney(s.behind)}</Badge>}
           {s.exposure > 0 && (
             <Badge tone={s.atRisk > 0 ? 'red' : 'amber'}>

@@ -26,6 +26,8 @@ export interface Partner {
   draw_order: string[]
   /** Whether members' statement links show the whole draw order, with names. */
   share_schedule: boolean
+  /** How members pay the banker (Lynk handle, bank account…), shown on their statement. */
+  pay_details: string | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -87,9 +89,33 @@ export interface AuditEntry {
   at: string
   actor: string | null
   partner_id: string | null
-  table_name: 'partners' | 'members' | 'contributions' | 'payouts'
+  table_name: 'partners' | 'members' | 'contributions' | 'payouts' | 'cash_counts'
   row_id: string | null
   action: 'insert' | 'update' | 'delete' | 'void'
   old_row: Record<string, unknown> | null
   new_row: Record<string, unknown> | null
+}
+
+export type ReminderKind = 'reminder' | 'statement' | 'receipt'
+
+/** A WhatsApp message the banker opened for a member. */
+export interface Reminder {
+  id: string
+  partner_id: string
+  member_id: string
+  kind: ReminderKind
+  sent_by: string | null
+  created_at: string
+}
+
+/** Cash actually counted in the box, against what the ledger said should be there. */
+export interface CashCount {
+  id: string
+  partner_id: string
+  counted_on: string
+  counted: number
+  expected: number
+  note: string | null
+  counted_by: string | null
+  created_at: string
 }

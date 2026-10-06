@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useLiveTable } from './useLiveTable'
-import type { Contribution, Member, Partner, Payout } from '../lib/types'
+import type { CashCount, Contribution, Member, Partner, Payout, Reminder } from '../lib/types'
 
 /** Every partner with all its rows — for the home dashboard and full backups. */
 export function useLedger() {
@@ -25,17 +25,18 @@ export function usePartnerData(partnerId: string | null) {
   const members = useLiveTable<Member>('members', { filter })
   const contributions = useLiveTable<Contribution>('contributions', { filter })
   const payouts = useLiveTable<Payout>('payouts', { filter })
+  // Extras: an older database without these tables just shows no reminders or counts.
+  const reminders = useLiveTable<Reminder>('reminders', { filter })
+  const cashCounts = useLiveTable<CashCount>('cash_counts', { filter })
 
   const partner = partners.rows[0] ?? null
   const loading = partners.loading || members.loading || contributions.loading || payouts.loading
   const error = partners.error || members.error || contributions.error || payouts.error
 
-  const refresh = useCallback(() => {
-    partners.reload()
-    members.reload()
-    contributions.reload()
-    payouts.reload()
-  }, [partners.reload, members.reload, contributions.reload, payouts.reload])
+  /** Reloads everything; resolves once the fresh rows are in. */
+  const refresh = useCallback(async () => {
+    await Promise.all([partners.reload(), members.reload(), contributions.reload(), payouts.reload(), reminders.reload(), cashCounts.reload()])
+  }, [partners.reload, members.reload, contributions.reload, payouts.reload, reminders.reload, cashCounts.reload])
 
   return useMemo(
     () => ({
@@ -44,9 +45,11 @@ export function usePartnerData(partnerId: string | null) {
       members: members.rows,
       contributions: contributions.rows,
       payouts: payouts.rows,
+      reminders: reminders.rows,
+      cashCounts: cashCounts.rows,
       loading,
       error,
     }),
-    [refresh, partner, members.rows, contributions.rows, payouts.rows, loading, error],
+    [refresh, partner, members.rows, contributions.rows, payouts.rows, reminders.rows, cashCounts.rows, loading, error],
   )
 }

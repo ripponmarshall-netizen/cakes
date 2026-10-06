@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePartnerData } from '../../hooks/usePartnerData'
 import { summarizePartner, type DrawShare } from '../../lib/calc'
-import { formatDate, formatHands, formatMoney, periodLabel } from '../../lib/format'
+import { formatDate, formatHands, formatMoney, formatMoneyShort, periodLabel, timeAgo } from '../../lib/format'
 import { Button, IconButton } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { Icon, type IconName } from '../ui/Icon'
@@ -16,18 +16,20 @@ import { PayoutModal } from './PayoutModal'
 import { RemindModal } from './RemindModal'
 import { HistoryModal } from './HistoryModal'
 import { ExportModal } from './ExportModal'
+import { CashCountModal } from './CashCountModal'
+import { NextRoundModal } from './NextRoundModal'
 import { HeroRings } from './PartnerList'
 import { Avatar, type PartnerCtx } from './shared'
 
 type Tab = 'payments' | 'draws' | 'members'
 
-export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: () => void }) {
+export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; onGone: () => void; onOpen: (id: string) => void }) {
   const data = usePartnerData(partnerId)
-  const { partner, members, contributions, payouts, loading, error, refresh } = data
+  const { partner, members, contributions, payouts, reminders, cashCounts, loading, error, refresh } = data
   const [tab, setTab] = useState<Tab | null>(null)
   const [editing, setEditing] = useState(false)
   const [paying, setPaying] = useState<DrawShare | null>(null)
-  const [panel, setPanel] = useState<'remind' | 'export' | 'history' | null>(null)
+  const [panel, setPanel] = useState<'remind' | 'export' | 'history' | 'count' | 'next' | null>(null)
   const tabBar = useRef<HTMLDivElement>(null)
 
   const summary = useMemo(
@@ -55,7 +57,7 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
     )
   }
 
-  const ctx: PartnerCtx = { partner, members, contributions, payouts, summary, refresh }
+  const ctx: PartnerCtx = { partner, members, contributions, payouts, reminders, cashCounts, summary, refresh }
   const activeTab: Tab = tab ?? (summary.members.length ? 'payments' : 'members')
   const { status, period, terms } = summary
   const next = summary.nextDraw
@@ -64,6 +66,10 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
   const progress = Math.max(0, Math.min(1, summary.rawPeriod / partner.term_months))
   // Counted in draw slots (two half hands share one), matching the Draws tab.
   const drawsDone = summary.schedule.filter((s) => s.done).length
+  const lastCount = cashCounts.reduce<(typeof cashCounts)[number] | null>((a, c) => (!a || c.created_at > a.created_at ? c : a), null)
+  const lastGap = lastCount ? Math.round((Number(lastCount.counted) - Number(lastCount.expected)) * 100) / 100 : 0
+  // Offer the next round in the last month, and once the cycle is over.
+  const nearEnd = status === 'complete' || (status === 'active' && period >= partner.term_months)
 
   function openTab(t: Tab) {
     setTab(t)
@@ -111,7 +117,12 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-200/80">In the pot now</p>
           <AnimatedMoney value={summary.pot} className="mt-1.5 block font-display text-[2.6rem] font-semibold leading-none sm:text-5xl" />
           <p className="num mt-2.5 text-sm text-brand-100/85">
-            {summary.behind > 0 ? (
+            {summary.pot < 0 ? (
+              <span className="inline-flex items-start gap-1.5 font-semibold text-rose-200">
+                <Icon name="alert" size={14} className="mt-0.5 shrink-0 text-rose-300" /> More has gone out than came in — check for a missing
+                payment or a draw paid early
+              </span>
+            ) : summary.behind > 0 ? (
               <>
                 Should be <span className="font-semibold text-gold-200">{formatMoney(summary.potIfPaidUp)}</span> · {formatMoney(summary.behind)} still owed
               </>
@@ -130,18 +141,48 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
         </div>
 
         <div className="relative mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-          <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)}`} />
-          <HeroStat label="Paid out" value={summary.paidOutNet} sub={`${drawsDone} of ${summary.schedule.length} draws`} />
-          <HeroStat label="Your fees" value={summary.feesEarned} sub={`of ${formatMoney(summary.feesProjected)}`} />
+          <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)}`} subShort={`of ${formatMoneyShort(summary.dueToDate)}`} />
+          <HeroStat label="Paid out" value={summary.paidOutNet} sub={`${drawsDone} of ${summary.schedule.length} draws`} subShort={`${drawsDone}/${summary.schedule.length} draws`} />
+          <HeroStat label="Fees" value={summary.feesEarned} sub={`of ${formatMoney(summary.feesProjected)}`} subShort={`of ${formatMoneyShort(summary.feesProjected)}`} />
         </div>
       </section>
 
       {/* Actions */}
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-4 gap-2">
         <ActionButton icon="message" label="Remind" badge={behindCount || undefined} onClick={() => setPanel('remind')} />
+        <ActionButton icon="coins" label="Count" onClick={() => setPanel('count')} />
         <ActionButton icon="download" label="Export" onClick={() => setPanel('export')} />
         <ActionButton icon="clock" label="History" onClick={() => setPanel('history')} />
       </div>
+      {lastCount && (
+        <p className="-mt-2 px-1 text-xs text-ink-500">
+          Cash last counted {timeAgo(lastCount.created_at)}:{' '}
+          {lastGap === 0 ? (
+            <span className="font-semibold text-brand-700">matched</span>
+          ) : (
+            <span className={`num font-semibold ${lastGap < 0 ? 'text-rose-600' : 'text-sky-700'}`}>
+              {formatMoney(Math.abs(lastGap))} {lastGap < 0 ? 'short' : 'over'}
+            </span>
+          )}
+        </p>
+      )}
+
+      {nearEnd && (
+        <button
+          type="button"
+          onClick={() => setPanel('next')}
+          className="pressable flex w-full items-center gap-3 rounded-3xl bg-brand-50/90 p-4 text-left text-brand-900 ring-1 ring-inset ring-brand-600/15"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-100">
+            <Icon name="sparkle" size={18} />
+          </span>
+          <span className="min-w-0 flex-1 text-sm leading-relaxed">
+            <strong>{status === 'complete' ? 'This round is finished.' : 'Last month of this round.'}</strong> Start the next one with the same
+            members and settings.
+          </span>
+          <Icon name="chevron-right" size={18} className="shrink-0 opacity-50" />
+        </button>
+      )}
 
       {/* Money at risk: members who have drawn more than they've paid in. */}
       {summary.exposure > 0 && (
@@ -249,7 +290,13 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
         hasActivity={contributions.length + payouts.length > 0}
         onSaved={refresh}
         onDeleted={onGone}
+        onNextRound={() => {
+          setEditing(false)
+          setPanel('next')
+        }}
       />
+      <CashCountModal ctx={ctx} open={panel === 'count'} onClose={() => setPanel(null)} />
+      <NextRoundModal ctx={ctx} open={panel === 'next'} onClose={() => setPanel(null)} onCreated={onOpen} />
       <PayoutModal ctx={ctx} share={paying} onClose={() => setPaying(null)} />
       <RemindModal ctx={ctx} open={panel === 'remind'} onClose={() => setPanel(null)} />
       <ExportModal ctx={ctx} open={panel === 'export'} onClose={() => setPanel(null)} />
@@ -263,7 +310,7 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
     <button
       type="button"
       onClick={onClick}
-      className="card group relative flex items-center justify-center gap-2 py-3.5 text-[13px] font-bold text-ink-700 transition duration-200 hover:text-brand-700 hover:shadow-float active:scale-[0.97]"
+      className="card group relative flex flex-col items-center justify-center gap-1 py-3 text-[12.5px] font-bold text-ink-700 transition duration-200 hover:text-brand-700 hover:shadow-float active:scale-[0.97] sm:flex-row sm:gap-2 sm:py-3.5 sm:text-[13px]"
     >
       <Icon name={icon} size={17} className="text-ink-400 transition group-hover:text-brand-600" />
       {label}
@@ -276,12 +323,17 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
   )
 }
 
-function HeroStat({ label, value, sub }: { label: string; value: number; sub: string }) {
+function HeroStat({ label, value, sub, subShort }: { label: string; value: number; sub: string; subShort?: string }) {
   return (
     <div className="min-w-0 rounded-2xl bg-white/[0.06] px-2 py-2.5 ring-1 ring-inset ring-white/[0.08] sm:px-3.5">
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand-200/80">{label}</p>
-      <AnimatedMoney value={value} className="mt-0.5 block truncate text-[13.5px] font-bold tracking-tight sm:text-lg" />
-      <p className="num truncate text-[10.5px] tracking-tight text-brand-100/60 sm:text-[11px] sm:tracking-normal">{sub}</p>
+      <p className="truncate text-[10px] font-bold uppercase tracking-[0.04em] text-brand-200/80 min-[360px]:tracking-[0.1em]">{label}</p>
+      {/* The narrowest phones get short amounts (J$710k) rather than cut-off ones. */}
+      <AnimatedMoney value={value} className="mt-0.5 block truncate text-[13.5px] font-bold tracking-tight max-[359px]:hidden sm:text-lg" />
+      <span className="num mt-0.5 block truncate text-[13.5px] font-bold tracking-tight min-[360px]:hidden">{formatMoneyShort(value)}</span>
+      <p className="num truncate text-[10.5px] tracking-tight text-brand-100/60 sm:text-[11px] sm:tracking-normal">
+        <span className={subShort ? 'max-[359px]:hidden' : ''}>{sub}</span>
+        {subShort && <span className="min-[360px]:hidden">{subShort}</span>}
+      </p>
     </div>
   )
 }

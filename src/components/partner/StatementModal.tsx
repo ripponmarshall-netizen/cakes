@@ -2,12 +2,14 @@ import { supabase } from '../../lib/supabase'
 import { isLive, ownerResolver, type MemberSummary } from '../../lib/calc'
 import { statementUrl } from '../../lib/format'
 import { statementMessage, waLink } from '../../lib/whatsapp'
+import { logMessage } from '../../lib/ledgerWrites'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
 import { Modal } from '../ui/Modal'
 import { Button, LinkButton } from '../ui/Button'
 import { Icon } from '../ui/Icon'
 import { StatementView } from './StatementView'
+import { PrintRoot } from '../ui/PrintRoot'
 import type { PartnerCtx } from './shared'
 import { useLast } from '../../hooks/usePresence'
 
@@ -49,16 +51,25 @@ export function StatementModal({ ctx, m: liveM, onClose }: { ctx: PartnerCtx; m:
 
   return (
     <Modal open={!!liveM} onClose={onClose} title="Statement" subtitle={m.member.name}>
-      <div className="print-area">
-        <StatementView partner={partner} summary={summary} m={m} payments={payments} names={names} showSchedule={partner.share_schedule} />
-      </div>
+      <StatementView partner={partner} summary={summary} m={m} payments={payments} names={names} showSchedule={partner.share_schedule} />
+      {liveM && (
+        <PrintRoot>
+          <StatementView partner={partner} summary={summary} m={m} payments={payments} names={names} showSchedule={partner.share_schedule} />
+        </PrintRoot>
+      )}
 
-      <div className="mt-6 space-y-3 border-t border-ink-100 pb-2 pt-5 print:hidden">
+      <div className="mt-6 space-y-3 border-t border-ink-100 pb-2 pt-5">
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => window.print()}>
             <Icon name="printer" size={16} /> Print / PDF
           </Button>
-          <LinkButton variant="primary" href={waLink(m.member.phone, statementMessage(partner, m, link))} target="_blank" rel="noreferrer">
+          <LinkButton
+            variant="primary"
+            href={waLink(m.member.phone, statementMessage(partner, m, link))}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => logMessage(partner.id, m.member.id, 'statement')}
+          >
             <Icon name="message" size={16} /> WhatsApp
           </LinkButton>
         </div>

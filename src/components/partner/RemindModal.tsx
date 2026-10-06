@@ -1,18 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useLast } from '../../hooks/usePresence'
 import { arrearsByPeriod } from '../../lib/calc'
-import { formatMoney, monthsLabel } from '../../lib/format'
+import { formatMoney, monthsLabel, timeAgo } from '../../lib/format'
+import { logMessage } from '../../lib/ledgerWrites'
 import { normalizePhone, reminderMessage, waLink } from '../../lib/whatsapp'
 import { useAuth } from '../../context/AuthContext'
 import { Modal } from '../ui/Modal'
 import { Icon } from '../ui/Icon'
-import { Avatar, type PartnerCtx } from './shared'
+import { Avatar, lastReminded, type PartnerCtx } from './shared'
 
 /** Steps through everyone who's behind: one tap opens WhatsApp with their reminder ready. */
 export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boolean; onClose: () => void }) {
-  const { partner, members, contributions, summary } = ctx
+  const { partner, members, contributions, summary, reminders } = ctx
   const { profile } = useAuth()
-  const [sent, setSent] = useState<Set<string>>(new Set())
 
   // Arrears are worked out month by month, so only while the sheet is open;
   // the last list stays on screen while it slides away.
@@ -43,7 +43,9 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
           <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
             {behind.map(({ m, months }) => {
               const hasPhone = !!normalizePhone(m.member.phone)
-              const done = sent.has(m.member.id)
+              // Logged reminders (kept in the database), so "Sent" survives closing the sheet.
+              const last = lastReminded(reminders, m.member.id)
+              const done = !!last && timeAgo(last) === 'today'
               return (
                 <li key={m.member.id} className="flex items-center gap-3 px-4 py-3">
                   <Avatar name={m.member.name} id={m.member.id} size="sm" />
@@ -53,13 +55,14 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
                       {m.risk === 'high' && <span className="font-semibold text-rose-600">Drew already · </span>}
                       {formatMoney(m.behind)} · {monthsLabel(months).toLowerCase()}
                       {!hasPhone && <span className="text-amber-600"> · no phone saved</span>}
+                      {last && <span className="block text-ink-400">Last reminded {timeAgo(last)}</span>}
                     </p>
                   </div>
                   <a
                     href={waLink(m.member.phone, reminderMessage(partner, m, months, profile?.display_name))}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => setSent((s) => new Set(s).add(m.member.id))}
+                    onClick={() => logMessage(partner.id, m.member.id, 'reminder')}
                     className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition duration-200 active:scale-95 ${
                       done ? 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/15' : 'theme-light bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm hover:to-brand-800'
                     }`}

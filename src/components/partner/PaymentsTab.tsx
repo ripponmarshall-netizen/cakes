@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { supabase } from '../../lib/supabase'
-import { periodRows, type PeriodRow } from '../../lib/calc'
-import { formatHands, formatMoney, methodLabels, periodDay, periodLabel, plural, todayIso } from '../../lib/format'
-import { firstName, normalizePhone, waLink } from '../../lib/whatsapp'
+import { arrearsByPeriod, periodRows, type PeriodRow } from '../../lib/calc'
+import { formatHands, formatMoney, methodLabels, monthNames, periodDay, periodLabel, plural, todayIso } from '../../lib/format'
+import { firstName, normalizePhone, receiptMessage, waLink } from '../../lib/whatsapp'
+import { logMessage, outcomeMessage, recordPayments, undoPayments } from '../../lib/ledgerWrites'
+import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
 import { Badge } from '../ui/Badge'
@@ -13,12 +14,12 @@ import { ContributionModal, lastMethod } from './ContributionModal'
 import { Avatar, ProgressBar, type PartnerCtx } from './shared'
 
 export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembers: () => void }) {
-  const { partner, members, contributions, summary, refresh } = ctx
+  const { partner, members, contributions, summary } = ctx
   const { toast } = useToast()
+  const { profile } = useAuth()
   const confirm = useConfirm()
   const T = partner.term_months
   const [period, setPeriod] = useState(() => Math.min(Math.max(summary.period, 1), T))
-  const [busy, setBusy] = useState<string | null>(null)
   const [openRow, setOpenRow] = useState<string | null>(null)
 
   const current = Math.min(period, T)
@@ -45,8 +46,12 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
     )
   }
 
+  /**
+   * Records the rest of the month for each row. The rows flip to Paid at once
+   * (the write is queued on the phone first), so a second tap can't pay twice.
+   */
   async function markPaid(rowsToPay: PeriodRow[]) {
-    const inserts = rowsToPay
+    const payments = rowsToPay
       .filter((r) => r.remaining > 0)
       .map((r) => ({
         partner_id: partner.id,
@@ -56,18 +61,48 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
         paid_on: todayIso(),
         method: lastMethod(),
       }))
-    if (!inserts.length) return
-    const { error } = await supabase.from('contributions').insert(inserts)
-    if (error) return toast(error.message, 'error')
-    refresh()
-    toast(inserts.length === 1 ? `${rowsToPay[0].member.name} marked paid` : `${inserts.length} payments recorded`)
+    if (!payments.length) return
+    const one = payments.length === 1 ? rowsToPay.find((r) => r.remaining > 0)! : null
+    const label = one ? `${formatMoney(one.remaining)} from ${one.member.name}` : `${payments.length} payments`
+    const written = recordPayments(payments, label)
+    const actions = [{ label: 'Undo', onClick: () => (undoPayments(written, label), toast('Undone', 'info')) }]
+    if (one) {
+      const m = summary.members.find((x) => x.member.id === one.member.id)
+      const text = receiptMessage(
+        partner,
+        one.member.name,
+        { amount: one.remaining, period: current, paid_on: payments[0].paid_on },
+        m ? { monthSettled: true, behind: Math.max(0, m.behind - one.remaining) } : null,
+        profile?.display_name,
+      )
+      if (normalizePhone(one.member.phone)) {
+        actions.push({
+          label: 'Receipt',
+          onClick: () => {
+            window.open(waLink(one.member.phone, text), '_blank', 'noreferrer')
+            logMessage(partner.id, one.member.id, 'receipt')
+          },
+        })
+      }
+    }
+    toast(one ? `${one.member.name} marked paid` : `${payments.length} payments recorded`, 'success', { actions })
+    const msg = outcomeMessage(await written.done)
+    if (msg) toast(msg.text, msg.tone)
   }
 
-  async function payOne(row: PeriodRow) {
-    setBusy(row.member.id)
-    await markPaid([row])
-    setBusy(null)
+  function payOne(row: PeriodRow) {
+    void markPaid([row])
   }
+
+  /** Months before this one that a member still owes, for the "also owes" hint. */
+  const earlier = (r: PeriodRow): number[] => {
+    const m = summary.members.find((x) => x.member.id === r.member.id)
+    if (!m || m.behind <= 0) return []
+    return arrearsByPeriod(partner, members, contributions, r.member.id, summary.period)
+      .map((a) => a.period)
+      .filter((p) => p !== current)
+  }
+  const earlierById = new Map(rows.map((r) => [r.member.id, earlier(r)]))
 
   async function payAll() {
     const total = open.reduce((a, r) => a + r.remaining, 0)
@@ -82,9 +117,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
       confirmLabel: 'Mark all paid',
     })
     if (!ok) return
-    setBusy('all')
-    await markPaid(open)
-    setBusy(null)
+    void markPaid(open)
   }
 
   const isCurrent = summary.status === 'active' && current === summary.period
@@ -157,7 +190,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
             <span />
           )}
           {open.length > 1 && (
-            <Button variant="secondary" size="sm" onClick={payAll} loading={busy === 'all'}>
+            <Button variant="secondary" size="sm" onClick={payAll}>
               <Icon name="check" size={15} /> Mark all paid
             </Button>
           )}
@@ -182,6 +215,9 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     formatMoney(r.due)
                   )}
                 </p>
+                {(earlierById.get(r.member.id)?.length ?? 0) > 0 && (
+                  <p className="truncate text-xs font-semibold text-rose-600">Also owes {monthNames(partner.start_date, earlierById.get(r.member.id)!)}</p>
+                )}
               </div>
             </button>
             {r.status === 'paid' ? (
@@ -203,6 +239,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     )}
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() => logMessage(partner.id, r.member.id, 'reminder')}
                     aria-label={`Remind ${r.member.name} on WhatsApp`}
                     title="Remind on WhatsApp"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-brand-50 hover:text-brand-700 active:scale-90"
@@ -210,7 +247,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     <Icon name="message" size={17} />
                   </a>
                 )}
-                <Button size="sm" variant="secondary" onClick={() => payOne(r)} loading={busy === r.member.id}>
+                <Button size="sm" variant="secondary" onClick={() => payOne(r)}>
                   Mark paid
                 </Button>
               </div>
