@@ -7,6 +7,7 @@ import { Logo } from './Logo'
 import { Button } from './ui/Button'
 import { Icon } from './ui/Icon'
 import { Skeleton } from './ui/Skeleton'
+import { PrintRoot } from './ui/PrintRoot'
 
 interface StatementPayload {
   member_id: string
@@ -40,7 +41,7 @@ export function PublicStatement({ token }: { token: string }) {
 
   const view = useMemo(() => {
     if (!data) return null
-    const partner: Partner = { ...data.partner, notes: null }
+    const partner: Partner = { ...data.partner, pay_details: data.partner.pay_details ?? null, notes: null }
     const members: Member[] = data.members.map((m) => ({ ...m, phone: null, notes: null, share_token: '' }))
     const contributions: Contribution[] = data.contributions.map((c) => ({ ...c, ref: null, note: null, ...noVoid }))
     const payouts: Payout[] = data.payouts.map((p) => ({ ...p, method: 'cash', ref: null, note: null, ...noVoid }))
@@ -80,7 +81,7 @@ export function PublicStatement({ token }: { token: string }) {
             <p className="mt-1.5 text-sm text-ink-500">{error ?? 'It may have been reset. Ask your banker to send you a new one.'}</p>
           </div>
         ) : (
-          <div className="print-area card animate-rise p-5 sm:p-8 print:shadow-none print:ring-0">
+          <div className="card animate-rise p-5 sm:p-8">
             <StatementView
               partner={view.partner}
               summary={view.summary}
@@ -89,6 +90,16 @@ export function PublicStatement({ token }: { token: string }) {
               names={view.names}
               showSchedule={view.partner.share_schedule}
             />
+            <PrintRoot>
+              <StatementView
+                partner={view.partner}
+                summary={view.summary}
+                m={view.m}
+                payments={view.contributions}
+                names={view.names}
+                showSchedule={view.partner.share_schedule}
+              />
+            </PrintRoot>
             <p className="mt-6 flex items-center gap-1.5 border-t border-ink-100 pt-4 text-xs text-ink-400">
               <Icon name="lock" size={12} className="shrink-0" />
               Read-only copy of the banker’s ledger. Something look wrong? Message your banker.

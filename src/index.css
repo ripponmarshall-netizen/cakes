@@ -168,22 +168,21 @@
   animation-timing-function: ease-out;
 }
 
-/* Printing a statement: show only the element marked .print-area. */
+/* Printing a statement: only the PrintRoot's content (see PrintRoot.tsx). */
+@media screen {
+  .print-root {
+    display: none;
+  }
+}
 @media print {
   body {
     background: white;
+    /* An open dialog locks scrolling; on paper that would cut the page off. */
+    overflow: visible !important;
+    padding-right: 0 !important;
   }
-  body * {
-    visibility: hidden;
-  }
-  .print-area,
-  .print-area * {
-    visibility: visible;
-  }
-  .print-area {
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: 100%;
+  body.has-print-root > *:not(.print-root) {
+    display: none !important;
   }
   @page {
     margin: 14mm;

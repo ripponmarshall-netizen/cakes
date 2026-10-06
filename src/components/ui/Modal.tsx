@@ -91,9 +91,9 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
 
   // Portalled to <body> so no transformed or blurred ancestor can trap it.
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6 print:static print:block">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
       <div
-        className={`theme-light absolute inset-0 bg-brand-950/55 backdrop-blur-[3px] print:hidden ${leaving ? 'animate-fade-out' : 'animate-fade'}`}
+        className={`theme-light absolute inset-0 bg-brand-950/55 backdrop-blur-[3px] ${leaving ? 'animate-fade-out' : 'animate-fade'}`}
         onClick={() => !leaving && onClose()}
         aria-hidden
       />
@@ -103,12 +103,12 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-surface shadow-lift outline-none sm:max-w-lg sm:rounded-4xl print:max-h-none print:max-w-none print:overflow-visible print:shadow-none ${
+        className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-surface shadow-lift outline-none sm:max-w-lg sm:rounded-4xl ${
           leaving ? 'pointer-events-none animate-sheet-out sm:animate-pop-out' : 'animate-sheet-in sm:animate-pop-in'
         }`}
       >
-        <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-ink-200 sm:hidden print:hidden" aria-hidden />
-        <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-4 pt-3 sm:px-7 sm:pt-6 print:hidden">
+        <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-ink-200 sm:hidden" aria-hidden />
+        <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-4 pt-3 sm:px-7 sm:pt-6">
           <div className="min-w-0">
             <h2 className="truncate font-display text-[1.35rem] font-semibold leading-tight text-ink-900">{title}</h2>
             {subtitle && <p className="num mt-1 text-sm text-ink-500">{subtitle}</p>}
@@ -122,11 +122,11 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
             <Icon name="x" size={17} />
           </button>
         </div>
-        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-7 print:overflow-visible print:p-0 ${footer ? 'pb-4' : 'pb-safe sm:pb-7'}`}>
+        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-7 ${footer ? 'pb-4' : 'pb-safe sm:pb-7'}`}>
           {children}
         </div>
         {footer && (
-          <div className="pb-safe shrink-0 border-t border-ink-100 bg-surface/95 px-5 pt-4 backdrop-blur sm:px-7 sm:pb-6 print:hidden">{footer}</div>
+          <div className="pb-safe shrink-0 border-t border-ink-100 bg-surface/95 px-5 pt-4 backdrop-blur sm:px-7 sm:pb-6">{footer}</div>
         )}
       </div>
     </div>,
