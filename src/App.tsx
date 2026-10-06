@@ -40,7 +40,7 @@ export default function App() {
           {/* Keyed so each page fades in when you move between them. */}
           <div key={isPartner ? route.id : 'home'} className="animate-rise">
             {isPartner ? (
-              <PartnerView partnerId={route.id} onGone={() => navigate({ name: 'home' })} />
+              <PartnerView partnerId={route.id} onGone={() => navigate({ name: 'home' })} onOpen={(id) => navigate({ name: 'partner', id })} />
             ) : (
               <PartnerList onOpen={(id) => navigate({ name: 'partner', id })} />
             )}

@@ -12,6 +12,16 @@ export function formatMoney(amount: number | null | undefined): string {
   return `${value < 0 ? '−' : ''}J$${body}`
 }
 
+/** Short form for tight spaces: "J$710k", "J$1.25M"; small amounts as usual. */
+export function formatMoneyShort(amount: number): string {
+  const abs = Math.abs(amount)
+  const sign = amount < 0 ? '−' : ''
+  const trim = (n: number, digits: number) => n.toFixed(digits).replace(/\.?0+$/, '')
+  if (abs >= 1_000_000) return `${sign}J$${trim(abs / 1_000_000, 2)}M`
+  if (abs >= 10_000) return `${sign}J$${trim(abs / 1_000, 1)}k`
+  return formatMoney(amount)
+}
+
 /** "Mar 2026" for the month a period starts in. */
 export function periodLabel(startIso: string, period: number): string {
   return periodStartDate(startIso, period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })

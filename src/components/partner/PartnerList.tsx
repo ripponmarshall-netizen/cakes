@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useLedger } from '../../hooks/usePartnerData'
 import { drawsDueSoon, summarizePartner, toCents, type PartnerSummary } from '../../lib/calc'
 import { downloadFile } from '../../lib/csv'
-import { formatDate, formatMoney, periodLabel, plural, todayIso } from '../../lib/format'
+import { formatDate, formatMoney, formatMoneyShort, periodLabel, plural, todayIso } from '../../lib/format'
 import { firstName } from '../../lib/whatsapp'
 import { fetchAll } from '../../lib/fetchAll'
 import type { Partner } from '../../lib/types'
@@ -289,7 +289,8 @@ function HeroStat({ label, value, sub, tone }: { label: string; value: number; s
         <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
         {label}
       </p>
-      <AnimatedMoney value={value} className="mt-1 block truncate text-[15px] font-bold sm:text-lg" />
+      <AnimatedMoney value={value} className="mt-1 block truncate text-[15px] font-bold max-[359px]:hidden sm:text-lg" />
+      <span className="num mt-1 block truncate text-[15px] font-bold min-[360px]:hidden">{formatMoneyShort(value)}</span>
       {sub && <p className="num truncate text-[11px] text-brand-100/60">{sub}</p>}
     </div>
   )

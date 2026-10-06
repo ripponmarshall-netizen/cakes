@@ -76,6 +76,15 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
         }
         return changes.length ? { icon: 'users', text: `Updated ${str(n.name)}`, detail: changes.join(' · ') } : null
       }
+      case 'cash_counts': {
+        const diff = Number(n.counted) - Number(n.expected)
+        return {
+          icon: 'coins',
+          text: `Counted the cash: ${money(n.counted)}`,
+          detail: diff === 0 ? 'matched the ledger' : `${money(Math.abs(diff))} ${diff > 0 ? 'over' : 'short'} · ${str(n.note)}`.replace(/ · $/, ''),
+          tone: diff < 0 ? 'bad' : undefined,
+        }
+      }
       case 'partners': {
         if (e.action === 'insert') return { icon: 'plus', text: 'Partner created' }
         if (e.action === 'delete') return { icon: 'trash', text: 'Partner deleted', tone: 'bad' }
@@ -88,6 +97,7 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
           fee_value: 'fee',
           notes: 'notes',
           share_schedule: 'statement sharing',
+          pay_details: 'how to pay'
         }
         const changed = Object.keys(labels).filter((k) => JSON.stringify(o[k]) !== JSON.stringify(n[k]))
         if (JSON.stringify(o.draw_order) !== JSON.stringify(n.draw_order) && changed.length === 0) return { icon: 'shuffle', text: 'Changed the draw order' }

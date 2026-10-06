@@ -20,9 +20,11 @@ interface Props {
   onCreated?: (id: string) => void
   onSaved?: () => void
   onDeleted?: () => void
+  /** Offers "Start the next round" (edit mode). */
+  onNextRound?: () => void
 }
 
-export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivity = false, onCreated, onSaved, onDeleted }: Props) {
+export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivity = false, onCreated, onSaved, onDeleted, onNextRound }: Props) {
   const { toast } = useToast()
   const confirm = useConfirm()
   const [name, setName] = useState('')
@@ -32,6 +34,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
   const [feeType, setFeeType] = useState<FeeType>('flat')
   const [fee, setFee] = useState('0')
   const [notes, setNotes] = useState('')
+  const [payDetails, setPayDetails] = useState('')
   const [shareSchedule, setShareSchedule] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -44,6 +47,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
     setFeeType(partner?.fee_type ?? 'flat')
     setFee(String(partner?.fee_value ?? 0))
     setNotes(partner?.notes ?? '')
+    setPayDetails(partner?.pay_details ?? '')
     setShareSchedule(partner?.share_schedule ?? false)
     // Reset only when opening (or switching partner): a live update to the
     // partner mustn't wipe what's being typed.
@@ -68,6 +72,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
       fee_type: feeType,
       fee_value: feeN,
       notes: notes.trim() || null,
+      pay_details: payDetails.trim() || null,
       share_schedule: shareSchedule,
     }
     if (partner) {
@@ -185,6 +190,16 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
           </div>
         )}
 
+        <Field label="How members pay you (optional)" hint="Shown on members’ statements and added to reminders.">
+          <Textarea
+            value={payDetails}
+            onChange={(e) => setPayDetails(e.target.value)}
+            rows={2}
+            maxLength={300}
+            placeholder="Lynk @yourname · NCB savings 123456789"
+          />
+        </Field>
+
         <Field label="Notes (optional)">
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Rules, where the box is kept…" />
         </Field>
@@ -202,11 +217,20 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
         )}
 
         {partner && (
-          <div className="pt-2">
+          <div className="flex flex-wrap justify-center gap-2 pt-2">
+            {onNextRound && (
+              <button
+                type="button"
+                onClick={onNextRound}
+                className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
+              >
+                <Icon name="sparkle" size={15} /> Start the next round
+              </button>
+            )}
             <button
               type="button"
               onClick={onDelete}
-              className="mx-auto flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
+              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
             >
               <Icon name="trash" size={15} /> Delete partner
             </button>

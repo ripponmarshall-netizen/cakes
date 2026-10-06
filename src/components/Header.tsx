@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { initials } from '../lib/format'
 import { Logo } from './Logo'
@@ -9,6 +9,7 @@ import { useTheme, type ThemePref } from '../hooks/useTheme'
 import type { IconName } from './ui/Icon'
 import { OfflineBanner } from './OfflineBanner'
 import { outbox } from '../lib/outbox'
+import { BankersModal } from './BankersModal'
 
 const themeCycle: Record<ThemePref, { next: ThemePref; icon: IconName; label: string }> = {
   system: { next: 'light', icon: 'monitor', label: 'Theme: follows your phone' },
@@ -23,6 +24,7 @@ export function Header({ onHome }: { onHome?: () => void }) {
   const themeState = themeCycle[theme.pref]
   const name = profile?.display_name ?? session?.user.email ?? 'You'
   const ref = useRef<HTMLElement>(null)
+  const [showBankers, setShowBankers] = useState(false)
 
   // Sticky bits further down (the partner tab bar) sit under the header. Its
   // height changes with the notch (safe area) and the offline banner, so it's
@@ -84,18 +86,22 @@ export function Header({ onHome }: { onHome?: () => void }) {
               <Icon name={themeState.icon} size={17} />
             </span>
           </IconButton>
-          <div
-            className="theme-light ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gold-200 to-gold-400 text-[11px] font-bold text-ink-900 ring-2 ring-surface"
-            title={`Signed in as ${name}`}
+          <button
+            type="button"
+            onClick={() => setShowBankers(true)}
+            aria-label={`Signed in as ${name} — bankers`}
+            title={`Signed in as ${name} — tap to manage bankers`}
+            className="theme-light ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gold-200 to-gold-400 text-[11px] font-bold text-ink-900 ring-2 ring-surface transition active:scale-90 focus:outline-none focus-visible:ring-brand-400"
           >
             {initials(name)}
-          </div>
+          </button>
           <IconButton label="Sign out" onClick={askSignOut}>
             <Icon name="logout" size={17} />
           </IconButton>
         </div>
       </div>
       <OfflineBanner />
+      <BankersModal open={showBankers} onClose={() => setShowBankers(false)} />
     </header>
   )
 }

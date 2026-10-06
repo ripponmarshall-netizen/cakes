@@ -285,6 +285,9 @@ function MoveDrawModal({
   while (hi < slots.length - 1 && !slots[hi + 1].locked) hi++
   return (
     <Modal open={from !== null} onClose={onClose} title="Move draw" subtitle={who(slots[shownFrom])}>
+      {lo === hi && (
+        <p className="mb-3 rounded-2xl bg-ink-50/80 px-4 py-3 text-sm text-ink-600">Paid draws on both sides — there’s nowhere to move this one.</p>
+      )}
       <ol className="divide-y divide-ink-100 rounded-2xl pb-2 ring-1 ring-inset ring-ink-200/70">
         {slots.map((s, i) => {
           const allowed = i >= lo && i <= hi && i !== shownFrom
@@ -304,9 +307,9 @@ function MoveDrawModal({
                   <Icon name="lock" size={13} className="shrink-0 text-ink-300" />
                 ) : i === shownFrom ? (
                   <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-gold-700">Now</span>
-                ) : (
+                ) : allowed ? (
                   <span className="shrink-0 text-xs font-semibold text-brand-700">Move here</span>
-                )}
+                ) : null}
               </button>
             </li>
           )
