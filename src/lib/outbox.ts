@@ -18,7 +18,8 @@ type Row = Record<string, unknown>
 
 export type Op =
   | { kind: 'insert'; table: string; rows: Row[] }
-  | { kind: 'update'; table: string; id: string; patch: Row }
+  /** `onlyIfNull`: skip rows where that column is already set (a repeated void is a no-op, not an error). */
+  | { kind: 'update'; table: string; id: string; patch: Row; onlyIfNull?: string }
   /** An RPC; `shows` are the rows it will create, displayed while it's queued. */
   | { kind: 'rpc'; fn: string; args: Row; shows: { table: string; rows: Row[] }[] }
 
@@ -144,7 +145,9 @@ async function send(op: Op): Promise<SendResult> {
     op.kind === 'insert'
       ? await supabase.from(op.table).upsert(op.rows, { onConflict: 'id', ignoreDuplicates: true })
       : op.kind === 'update'
-        ? await supabase.from(op.table).update(op.patch).eq('id', op.id)
+        ? await (op.onlyIfNull
+            ? supabase.from(op.table).update(op.patch).eq('id', op.id).is(op.onlyIfNull, null)
+            : supabase.from(op.table).update(op.patch).eq('id', op.id))
         : await supabase.rpc(op.fn, op.args)
   if (!res.error) return { ok: true }
   return classify(res.status, res.error.message)

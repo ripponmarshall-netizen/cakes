@@ -30,7 +30,12 @@ export function recordPayments(payments: NewPayment[], label: string): Written {
 }
 
 export function voidRow(table: 'contributions' | 'payouts', id: string, reason: string, label: string): Promise<Outcome> {
-  return outbox.enqueue({ kind: 'update', table, id, patch: { voided_at: new Date().toISOString(), void_reason: reason } }, label).done
+  // Only touches rows not voided yet: sending the same void twice (a retry, or a
+  // second tab) must not trip the database's "can't un-void" guard.
+  return outbox.enqueue(
+    { kind: 'update', table, id, patch: { voided_at: new Date().toISOString(), void_reason: reason }, onlyIfNull: 'voided_at' },
+    label,
+  ).done
 }
 
 /** Takes back payments just recorded: drops them if they haven't been sent, else voids them. */
