@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { useAuth } from './context/AuthContext'
+import { outbox } from './lib/outbox'
+import { useToast } from './components/ui/Toast'
 import { useAdmin } from './hooks/useAdmin'
 import { useHashRoute } from './hooks/useHashRoute'
 import { AuthScreen } from './components/AuthScreen'
@@ -13,6 +16,13 @@ export default function App() {
   const { session, loading } = useAuth()
   const admin = useAdmin(session?.user.id)
   const { route, navigate } = useHashRoute()
+  const { toast } = useToast()
+
+  // A write queued earlier (e.g. before closing the app offline) that the server then refused.
+  useEffect(
+    () => outbox.onFailed((entry, message) => toast(`Couldn’t save ${entry.label}: ${message}`, 'error')),
+    [toast],
+  )
 
   // Members' statement links work without an account.
   if (route.name === 'statement') return <PublicStatement token={route.token} />

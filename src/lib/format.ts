@@ -82,3 +82,12 @@ export function monthsLabel(periods: number[]): string {
   const contiguous = periods.every((p, i) => i === 0 || p === periods[i - 1] + 1)
   return contiguous ? `Months ${periods[0]}–${periods[periods.length - 1]}` : `Months ${periods.join(', ')}`
 }
+
+/** "Jul–Aug" / "Jul" / "Jul, Sep": the months of the given periods, short. */
+export function monthNames(startIso: string, periods: number[]): string {
+  const short = (p: number) => periodStartDate(startIso, p).toLocaleDateString('en-US', { month: 'short' })
+  if (periods.length === 0) return ''
+  if (periods.length === 1) return short(periods[0])
+  const contiguous = periods.every((p, i) => i === 0 || p === periods[i - 1] + 1)
+  return contiguous ? `${short(periods[0])}–${short(periods[periods.length - 1])}` : periods.map(short).join(', ')
+}

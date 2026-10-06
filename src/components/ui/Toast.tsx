@@ -3,15 +3,21 @@ import { Icon, type IconName } from './Icon'
 
 type ToastTone = 'success' | 'error' | 'info'
 
+export interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastItem {
   id: number
   message: string
   tone: ToastTone
+  actions: ToastAction[]
   leaving: boolean
 }
 
 interface ToastContextValue {
-  toast: (message: string, tone?: ToastTone) => void
+  toast: (message: string, tone?: ToastTone, opts?: { actions?: ToastAction[] }) => void
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined)
@@ -33,11 +39,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setItems((prev) => prev.filter((t) => t.id !== id)), 220)
   }, [])
 
-  const toast = useCallback(
-    (message: string, tone: ToastTone = 'success') => {
+  const toast = useCallback<ToastContextValue['toast']>(
+    (message, tone = 'success', opts = {}) => {
       const id = Date.now() + Math.random()
-      setItems((prev) => [...prev.slice(-2), { id, message, tone, leaving: false }])
-      timers.current.set(id, setTimeout(() => dismiss(id), tone === 'error' ? 5200 : 3200))
+      const actions = opts.actions ?? []
+      setItems((prev) => [...prev.slice(-2), { id, message, tone, actions, leaving: false }])
+      // Long enough to read and reach for Undo.
+      timers.current.set(id, setTimeout(() => dismiss(id), actions.length ? 8000 : tone === 'error' ? 5200 : 3200))
     },
     [dismiss],
   )
@@ -55,14 +63,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             onClick={() => dismiss(t.id)}
-            className={`theme-light pointer-events-auto flex max-w-md cursor-pointer items-center gap-2.5 rounded-2xl bg-ink-900/95 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-lift ring-1 ring-white/10 backdrop-blur ${
-              t.leaving ? 'animate-drop-out' : 'animate-drop-in'
-            }`}
+            className={`theme-light pointer-events-auto flex max-w-md cursor-pointer items-center gap-2.5 rounded-2xl bg-ink-900/95 py-2 pl-2.5 text-sm font-semibold text-white shadow-lift ring-1 ring-white/10 backdrop-blur ${
+              t.actions.length ? 'pr-2' : 'pr-4'
+            } ${t.leaving ? 'animate-drop-out' : 'animate-drop-in'}`}
           >
             <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${toneStyles[t.tone].dot}`}>
               <Icon name={toneStyles[t.tone].icon} size={13} />
             </span>
-            {t.message}
+            <span className="min-w-0 py-0.5">{t.message}</span>
+            {t.actions.map((a) => (
+              <button
+                key={a.label}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  a.onClick()
+                  dismiss(t.id)
+                }}
+                className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[13px] font-bold text-gold-200 transition hover:bg-white/20 active:scale-95"
+              >
+                {a.label}
+              </button>
+            ))}
           </div>
         ))}
       </div>

@@ -1,5 +1,5 @@
 import type { MemberSummary } from './calc'
-import { formatHands, formatMoney, monthsLabel, periodLabel } from './format'
+import { formatDate, formatHands, formatMoney, monthsLabel, periodLabel } from './format'
 import type { Partner } from './types'
 
 /**
@@ -43,7 +43,45 @@ export function reminderMessage(partner: Partner, m: MemberSummary, owedMonths: 
   ]
   const draw = drawLine(partner, m)
   if (draw) lines.push(draw)
+  if (partner.pay_details?.trim()) lines.push(`Pay by: ${partner.pay_details.trim()}`)
   lines.push(signOff ? `Thanks! – ${signOff}` : 'Thanks!')
+  return lines.join('\n')
+}
+
+/** Confirms a payment just received, and where the member stands now. */
+export function receiptMessage(
+  partner: Partner,
+  name: string,
+  payment: { amount: number; period: number; paid_on: string },
+  standing: { monthSettled: boolean; behind: number } | null,
+  signOff?: string,
+): string {
+  const lines = [
+    `Hi ${firstName(name)}, received ${formatMoney(payment.amount)} for ${periodLabel(partner.start_date, payment.period)} (${partner.name}) on ${formatDate(payment.paid_on)}.`,
+  ]
+  if (standing) {
+    if (standing.behind > 0) lines.push(`Still owing overall: ${formatMoney(standing.behind)}.`)
+    else if (standing.monthSettled) lines.push('You’re up to date ✅')
+  }
+  lines.push(signOff ? `Thanks! – ${signOff}` : 'Thanks!')
+  return lines.join('\n')
+}
+
+/** Confirms a draw handed over, showing how the amount was worked out. */
+export function payoutReceiptMessage(
+  partner: Partner,
+  name: string,
+  p: { period: number; gross: number; fee: number; arrears: number; handed: number; paid_on: string },
+  signOff?: string,
+): string {
+  const lines = [
+    `Hi ${firstName(name)}, your ${partner.name} draw for ${periodLabel(partner.start_date, p.period)} was paid on ${formatDate(p.paid_on)}.`,
+    `Draw: ${formatMoney(p.gross)}`,
+  ]
+  if (p.fee > 0) lines.push(`Banker fee: −${formatMoney(p.fee)}`)
+  if (p.arrears > 0) lines.push(`Arrears taken out: −${formatMoney(p.arrears)}`)
+  lines.push(`You received: ${formatMoney(p.handed)}`)
+  lines.push(signOff ? `Congrats! – ${signOff}` : 'Congrats!')
   return lines.join('\n')
 }
 
@@ -57,6 +95,7 @@ export function statementMessage(partner: Partner, m: MemberSummary, link: strin
   const draw = drawLine(partner, m)
   if (draw) lines.push(draw)
   if (m.received > 0) lines.push(`Received so far: ${formatMoney(m.received)}`)
+  if (m.behind > 0 && partner.pay_details?.trim()) lines.push(`Pay by: ${partner.pay_details.trim()}`)
   if (link) lines.push('', `See your full record any time: ${link}`)
   return lines.join('\n')
 }

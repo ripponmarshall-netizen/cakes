@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { supabase } from '../../lib/supabase'
 import type { PeriodRow } from '../../lib/calc'
+import { logMessage, outcomeMessage, recordPayments, voidRow } from '../../lib/ledgerWrites'
+import { normalizePhone, receiptMessage, waLink } from '../../lib/whatsapp'
+import { useAuth } from '../../context/AuthContext'
 import { readCache, writeCache } from '../../lib/cache'
 import { formatDate, formatMoney, methodLabels, periodLabel, todayIso } from '../../lib/format'
 import type { Contribution, PayoutMethod } from '../../lib/types'
@@ -36,8 +38,9 @@ export function ContributionModal({
   period: number
   onClose: () => void
 }) {
-  const { partner, members, refresh } = ctx
+  const { partner, members, summary } = ctx
   const { toast } = useToast()
+  const { profile } = useAuth()
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(todayIso())
   const [method, setMethod] = useState<PayoutMethod>('cash')
@@ -67,39 +70,45 @@ export function ContributionModal({
     e.preventDefault()
     const value = Number(amount)
     if (!(value > 0) || !row) return
-    setSaving(true)
-    const { error } = await supabase.from('contributions').insert({
-      partner_id: partner.id,
-      member_id: row.member.id,
-      period,
-      amount: value,
-      paid_on: date,
-      method,
-      ref: reference.trim() || null,
-      note: note.trim() || null,
-    })
-    setSaving(false)
-    if (error) return toast(error.message, 'error')
+    const label = `${formatMoney(value)} from ${row.member.name}`
+    const written = recordPayments(
+      [{ partner_id: partner.id, member_id: row.member.id, period, amount: value, paid_on: date, method, ref: reference.trim() || null, note: note.trim() || null }],
+      label,
+    )
     rememberMethod(method)
-    refresh()
     toast(`${formatMoney(value)} recorded`)
     setAmount('')
     setReference('')
     setNote('')
+    setSaving(true)
+    const msg = outcomeMessage(await written.done)
+    setSaving(false)
+    if (msg) toast(msg.text, msg.tone)
+  }
+
+  const phoneOk = !!normalizePhone(row.member.phone)
+  const standing = summary.members.find((m) => m.member.id === row.member.id)
+  function receiptHref(c: Contribution) {
+    return waLink(
+      row!.member.phone,
+      receiptMessage(
+        partner,
+        row!.member.name,
+        { amount: Number(c.amount), period: c.period, paid_on: c.paid_on },
+        standing ? { monthSettled: row!.remaining <= 0, behind: standing.behind } : null,
+        profile?.display_name,
+      ),
+    )
   }
 
   async function voidEntry(reason: string): Promise<boolean> {
     if (!voiding) return false
-    const { error } = await supabase
-      .from('contributions')
-      .update({ voided_at: new Date().toISOString(), void_reason: reason })
-      .eq('id', voiding.id)
-    if (error) {
-      toast(error.message, 'error')
-      return false
-    }
-    refresh()
+    const done = voidRow('contributions', voiding.id, reason, `Void of ${formatMoney(voiding.amount)}`)
     toast('Payment voided', 'info')
+    void done.then((o) => {
+      const msg = outcomeMessage(o)
+      if (msg) toast(msg.text, msg.tone)
+    })
     return true
   }
 
@@ -127,6 +136,19 @@ export function ContributionModal({
         </p>
         {voided && <p className="truncate text-xs font-semibold text-rose-600">Voided · {c.void_reason}</p>}
       </div>
+      {!voided && phoneOk && c.method !== 'deduction' && (
+        <a
+          href={receiptHref(c)}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => logMessage(partner.id, row.member.id, 'receipt')}
+          aria-label="Send a receipt on WhatsApp"
+          title="Send a receipt on WhatsApp"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-500 transition hover:bg-brand-50 hover:text-brand-700 active:scale-90"
+        >
+          <Icon name="message" size={16} />
+        </a>
+      )}
       {!voided && (
         <IconButton label="Void payment" onClick={() => setVoiding(c)} className="hover:bg-rose-50 hover:text-rose-600">
           <Icon name="ban" size={16} />

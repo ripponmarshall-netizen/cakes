@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { clearCache } from '../lib/cache'
+import { outbox } from '../lib/outbox'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/types'
 
@@ -38,6 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  // Queued payments only go out with a session behind them.
+  useEffect(() => {
+    outbox.setEnabled(!!session)
+  }, [session])
 
   // Load the signed-in user's profile (their display name).
   useEffect(() => {
@@ -79,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
+    outbox.clear()
     clearCache()
   }
 

@@ -8,6 +8,7 @@ import { useConfirm } from './ui/Confirm'
 import { useTheme, type ThemePref } from '../hooks/useTheme'
 import type { IconName } from './ui/Icon'
 import { OfflineBanner } from './OfflineBanner'
+import { outbox } from '../lib/outbox'
 
 const themeCycle: Record<ThemePref, { next: ThemePref; icon: IconName; label: string }> = {
   system: { next: 'light', icon: 'monitor', label: 'Theme: follows your phone' },
@@ -41,10 +42,14 @@ export function Header({ onHome }: { onHome?: () => void }) {
   }, [])
 
   async function askSignOut() {
+    const waiting = outbox.pendingCount()
     const ok = await confirm({
       title: 'Sign out?',
-      message: 'The copy of the ledger saved on this device for offline use is cleared too.',
-      confirmLabel: 'Sign out',
+      message: waiting
+        ? `${waiting === 1 ? '1 change hasn’t' : `${waiting} changes haven’t`} reached the server yet and will be lost. Get a signal and let them sync first.`
+        : 'The copy of the ledger saved on this device for offline use is cleared too.',
+      confirmLabel: waiting ? 'Sign out anyway' : 'Sign out',
+      danger: waiting > 0,
     })
     if (ok) signOut()
   }
