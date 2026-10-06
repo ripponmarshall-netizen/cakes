@@ -91,3 +91,14 @@ export function monthNames(startIso: string, periods: number[]): string {
   const contiguous = periods.every((p, i) => i === 0 || p === periods[i - 1] + 1)
   return contiguous ? `${short(periods[0])}–${short(periods[periods.length - 1])}` : periods.map(short).join(', ')
 }
+
+/** "today", "yesterday", "3 days ago", then "Sep 12" — for when something last happened. */
+export function timeAgo(iso: string, now: Date = new Date()): string {
+  const then = new Date(iso)
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const days = Math.round((day(now) - day(then)) / 86_400_000)
+  if (days <= 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days} days ago`
+  return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(then.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) })
+}

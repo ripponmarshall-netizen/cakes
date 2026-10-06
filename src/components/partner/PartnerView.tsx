@@ -23,7 +23,7 @@ type Tab = 'payments' | 'draws' | 'members'
 
 export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: () => void }) {
   const data = usePartnerData(partnerId)
-  const { partner, members, contributions, payouts, loading, error, refresh } = data
+  const { partner, members, contributions, payouts, reminders, cashCounts, loading, error, refresh } = data
   const [tab, setTab] = useState<Tab | null>(null)
   const [editing, setEditing] = useState(false)
   const [paying, setPaying] = useState<DrawShare | null>(null)
@@ -55,7 +55,7 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
     )
   }
 
-  const ctx: PartnerCtx = { partner, members, contributions, payouts, summary, refresh }
+  const ctx: PartnerCtx = { partner, members, contributions, payouts, reminders, cashCounts, summary, refresh }
   const activeTab: Tab = tab ?? (summary.members.length ? 'payments' : 'members')
   const { status, period, terms } = summary
   const next = summary.nextDraw
@@ -111,7 +111,12 @@ export function PartnerView({ partnerId, onGone }: { partnerId: string; onGone: 
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-200/80">In the pot now</p>
           <AnimatedMoney value={summary.pot} className="mt-1.5 block font-display text-[2.6rem] font-semibold leading-none sm:text-5xl" />
           <p className="num mt-2.5 text-sm text-brand-100/85">
-            {summary.behind > 0 ? (
+            {summary.pot < 0 ? (
+              <span className="inline-flex items-start gap-1.5 font-semibold text-rose-200">
+                <Icon name="alert" size={14} className="mt-0.5 shrink-0 text-rose-300" /> More has gone out than came in — check for a missing
+                payment or a draw paid early
+              </span>
+            ) : summary.behind > 0 ? (
               <>
                 Should be <span className="font-semibold text-gold-200">{formatMoney(summary.potIfPaidUp)}</span> · {formatMoney(summary.behind)} still owed
               </>

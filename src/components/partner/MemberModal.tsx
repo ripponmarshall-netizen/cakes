@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { arrearsByPeriod, type MemberSummary } from '../../lib/calc'
-import { formatHands, formatMoney, formatShortDate, monthsLabel, periodLabel } from '../../lib/format'
+import { formatHands, formatMoney, formatShortDate, monthsLabel, periodLabel, plural, timeAgo } from '../../lib/format'
+import { logMessage } from '../../lib/ledgerWrites'
 import { normalizePhone, reminderMessage, waLink } from '../../lib/whatsapp'
 import { useAuth } from '../../context/AuthContext'
 import { useLast } from '../../hooks/usePresence'
@@ -15,7 +16,7 @@ import { Badge } from '../ui/Badge'
 import { RiskBadge, StandingBadge } from './MembersTab'
 import { StatementModal } from './StatementModal'
 import { ReplaceMemberModal } from './ReplaceMemberModal'
-import { Stat, type PartnerCtx } from './shared'
+import { Stat, lastReminded, type PartnerCtx } from './shared'
 
 /** Add a member (summary = null) or view / edit one. */
 export function MemberModal({
@@ -46,15 +47,20 @@ export function MemberModal({
   const [showStatement, setShowStatement] = useState(false)
   const [replacing, setReplacing] = useState(false)
 
+  /** Puts the form back to the member's saved details. */
+  function resetForm() {
+    setName(member?.name ?? '')
+    setPhone(member?.phone ?? '')
+    setHands(String(member?.hands ?? 1))
+    setNotes(member?.notes ?? '')
+  }
+
   useEffect(() => {
     if (!open) return
     setEditing(!member)
     setShowStatement(false)
     setReplacing(false)
-    setName(member?.name ?? '')
-    setPhone(member?.phone ?? '')
-    setHands(String(member?.hands ?? 1))
-    setNotes(member?.notes ?? '')
+    resetForm()
     // Only reset when opening or switching member.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, member?.id])
@@ -79,20 +85,15 @@ export function MemberModal({
     else onClose()
   }
 
+  // Members with money recorded (even voided) stay for the record; so does
+  // anyone who took over a hand — deleting them would quietly bring the old
+  // member back as active. Either way, Replace is the way out.
+  const hasHistory = !!member && [...contributions, ...payouts].some((r) => r.member_id === member.id)
+  const predecessor = member ? members.find((x) => x.replaced_by === member.id) : undefined
+  const removable = !!member && !hasHistory && !predecessor
+
   async function remove() {
-    if (!summary || !member) return
-    const hasHistory = [...contributions, ...payouts].some((r) => r.member_id === member.id)
-    if (hasHistory) {
-      toast('This member has money recorded (even if voided). Use “Replace” if someone is taking over their hand.', 'error')
-      return
-    }
-    // Deleting a replacement would clear the old member's "replaced by" and
-    // quietly bring them back as active.
-    const predecessor = members.find((x) => x.replaced_by === member.id)
-    if (predecessor) {
-      toast(`${member.name} took over from ${predecessor.name}, so they can’t be removed. Use “Replace” instead.`, 'error')
-      return
-    }
+    if (!summary || !member || !removable) return
     const ok = await confirm({
       title: `Remove ${member.name}?`,
       message: 'They have no payments recorded. Their draw slots go to the remaining members.',
@@ -108,6 +109,20 @@ export function MemberModal({
   }
 
   if (!view) return null
+
+  // Hands count for every month, past ones included: changing them mid-cycle
+  // rewrites what's owed so far and what they draw.
+  const monthsGone = ctx.summary.period
+  const oldHands = Number(member?.hands ?? 0)
+  let handsChangeNote: string | null = null
+  if (member && valid && handsN !== oldHands && monthsGone > 0) {
+    const diff = Math.abs(handsN - oldHands) * Number(partner.hand_amount) * monthsGone
+    const effect = handsN > oldHands ? `owe ${formatMoney(diff)} more right away` : `have ${formatMoney(diff)} counted as paid ahead`
+    handsChangeNote =
+      `This applies to every month, including the ${plural(monthsGone, 'month')} already started: ${member.name} would ${effect}, ` +
+      'and their draws change to match. If they’re taking on a new hand from now, add it as a separate member instead.'
+  }
+
   const formId = `member-form-${member?.id ?? 'new'}`
 
   const form = (
@@ -140,6 +155,12 @@ export function MemberModal({
       <Field label="Notes (optional)">
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Wants to draw in December…" />
       </Field>
+      {handsChangeNote && (
+        <p className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
+          <Icon name="alert" size={16} className="mt-px shrink-0" />
+          <span>{handsChangeNote}</span>
+        </p>
+      )}
       {handsN % 1 !== 0 && halfSteps && (
         <p className="flex items-start gap-2.5 rounded-2xl bg-sky-50 px-3.5 py-3 text-xs leading-relaxed text-sky-900 ring-1 ring-inset ring-sky-200/60">
           <Icon name="info" size={16} className="mt-px shrink-0" />
@@ -151,7 +172,18 @@ export function MemberModal({
 
   const formFooter = (
     <div className="flex gap-2.5">
-      <Button variant="secondary" className="flex-1" onClick={member ? () => setEditing(false) : onClose}>
+      <Button
+        variant="secondary"
+        className="flex-1"
+        onClick={
+          member
+            ? () => {
+                resetForm()
+                setEditing(false)
+              }
+            : onClose
+        }
+      >
         Cancel
       </Button>
       <Button type="submit" form={formId} className="flex-1" loading={saving} disabled={!valid}>
@@ -172,6 +204,7 @@ export function MemberModal({
   const owedMonths = s.behind > 0 ? arrearsByPeriod(partner, members, contributions, member.id, ctx.summary.period).map((a) => a.period) : []
   const remindHref = waLink(member.phone, reminderMessage(partner, s, owedMonths, profile?.display_name))
   const hasPhone = !!normalizePhone(member.phone)
+  const reminded = lastReminded(ctx.reminders, member.id)
 
   const detailFooter = (
     <div className="space-y-2.5">
@@ -183,6 +216,7 @@ export function MemberModal({
           href={remindHref}
           target="_blank"
           rel="noreferrer"
+          onClick={() => s.behind > 0 && logMessage(partner.id, member.id, 'reminder')}
           variant={s.behind > 0 ? 'primary' : 'secondary'}
           title={hasPhone ? undefined : 'No usable phone number — WhatsApp will ask who to send it to'}
         >
@@ -196,9 +230,13 @@ export function MemberModal({
         <Button variant="ghost" size="sm" onClick={() => setReplacing(true)}>
           <Icon name="swap" size={15} /> Replace
         </Button>
-        <Button variant="ghost" size="sm" onClick={remove} className="text-rose-600 hover:bg-rose-50 hover:text-rose-700">
-          <Icon name="trash" size={15} /> Remove
-        </Button>
+        {removable ? (
+          <Button variant="ghost" size="sm" onClick={remove} className="text-rose-600 hover:bg-rose-50 hover:text-rose-700">
+            <Icon name="trash" size={15} /> Remove
+          </Button>
+        ) : (
+          <span className="w-20" aria-hidden />
+        )}
       </div>
     </div>
   )
@@ -228,6 +266,10 @@ export function MemberModal({
                 </a>
               )}
             </div>
+
+            {s.behind > 0 && (
+              <p className="-mt-2 mb-4 px-1 text-xs text-ink-500">{reminded ? <>Last reminded {timeAgo(reminded)}</> : 'Not reminded yet'}</p>
+            )}
 
             {s.risk && (
               <p
@@ -260,6 +302,7 @@ export function MemberModal({
             <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
               {s.shares.map((slot) => {
                 const overdue = !slot.payout && slot.period < ctx.summary.rawPeriod
+                const thisMonth = !slot.payout && slot.period === ctx.summary.rawPeriod
                 return (
                   <li key={`${slot.slotIndex}-${slot.handNo}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                     <span className="flex items-center gap-2.5 font-semibold text-ink-800">
@@ -283,7 +326,9 @@ export function MemberModal({
                         <Icon name="check" size={11} /> {formatMoney(slot.payout.net)} · {formatShortDate(slot.payout.paid_on)}
                       </Badge>
                     ) : (
-                      <Badge tone={overdue ? 'red' : 'gray'}>{overdue ? 'Overdue' : `${formatMoney(slot.net)} · upcoming`}</Badge>
+                      <Badge tone={overdue ? 'red' : thisMonth ? 'gold' : 'gray'}>
+                        {overdue ? 'Overdue' : `${formatMoney(slot.net)} · ${thisMonth ? 'this month' : 'upcoming'}`}
+                      </Badge>
                     )}
                   </li>
                 )

@@ -42,7 +42,7 @@ export function ExportModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
           </button>
         ))}
       </div>
-      <p className="mt-4 pb-2 text-xs text-ink-400">For a backup of every partner at once, use “Backup” on the home screen.</p>
+      <p className="mt-4 pb-2 text-xs text-ink-400">For a backup of every partner at once, use “Back up everything” on the home screen.</p>
     </Modal>
   )
 }

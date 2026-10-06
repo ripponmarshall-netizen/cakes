@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabase'
 import { isLive, ownerResolver, type MemberSummary } from '../../lib/calc'
 import { statementUrl } from '../../lib/format'
 import { statementMessage, waLink } from '../../lib/whatsapp'
+import { logMessage } from '../../lib/ledgerWrites'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
 import { Modal } from '../ui/Modal'
@@ -62,7 +63,13 @@ export function StatementModal({ ctx, m: liveM, onClose }: { ctx: PartnerCtx; m:
           <Button variant="secondary" onClick={() => window.print()}>
             <Icon name="printer" size={16} /> Print / PDF
           </Button>
-          <LinkButton variant="primary" href={waLink(m.member.phone, statementMessage(partner, m, link))} target="_blank" rel="noreferrer">
+          <LinkButton
+            variant="primary"
+            href={waLink(m.member.phone, statementMessage(partner, m, link))}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => logMessage(partner.id, m.member.id, 'statement')}
+          >
             <Icon name="message" size={16} /> WhatsApp
           </LinkButton>
         </div>
