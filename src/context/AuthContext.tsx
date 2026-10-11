@@ -84,7 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    // Without a signal the server can't be told, and supabase-js then keeps the
+    // session: you'd stay signed in with the offline copy already wiped. End it
+    // on this device regardless; the token simply expires on the server.
+    const { error } = await supabase.auth.signOut()
+    if (error) await supabase.auth.signOut({ scope: 'local' })
     outbox.clear()
     clearCache()
   }

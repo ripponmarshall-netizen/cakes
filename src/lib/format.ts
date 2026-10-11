@@ -6,7 +6,8 @@ const cents = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximum
 
 /** Jamaican dollars. Drops ".00" on whole amounts: 12000 -> "J$12,000", 12.5 -> "J$12.50". */
 export function formatMoney(amount: number | null | undefined): string {
-  const value = typeof amount === 'number' && Number.isFinite(amount) ? amount : 0
+  // Rounded to the cent first, so float dust (-0.004) never shows as "−J$0".
+  const value = typeof amount === 'number' && Number.isFinite(amount) ? Math.round(amount * 100) / 100 || 0 : 0
   const abs = Math.abs(value)
   const body = Number.isInteger(Math.round(abs * 100) / 100) ? whole.format(abs) : cents.format(abs)
   return `${value < 0 ? '−' : ''}J$${body}`
@@ -17,7 +18,8 @@ export function formatMoneyShort(amount: number): string {
   const abs = Math.abs(amount)
   const sign = amount < 0 ? '−' : ''
   const trim = (n: number, digits: number) => n.toFixed(digits).replace(/\.?0+$/, '')
-  if (abs >= 1_000_000) return `${sign}J$${trim(abs / 1_000_000, 2)}M`
+  // 999,960 would round up to "1000k": anything that rounds to a million is shown in millions.
+  if (abs >= 999_950) return `${sign}J$${trim(abs / 1_000_000, 2)}M`
   if (abs >= 10_000) return `${sign}J$${trim(abs / 1_000, 1)}k`
   return formatMoney(amount)
 }
