@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { usePresence } from '../../hooks/usePresence'
 import { Icon } from './Icon'
@@ -45,6 +45,8 @@ function trapFocus(e: KeyboardEvent, panel: HTMLElement | null) {
 export function Modal({ open, onClose, title, subtitle, children, footer }: ModalProps) {
   const { mounted, leaving } = usePresence(open)
   const panel = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  const subtitleId = useId()
   // Callers pass inline closures; keep the latest without re-running the effect
   // (re-running would reorder the stack and let Escape close the wrong modal).
   const closeRef = useRef(onClose)
@@ -102,7 +104,8 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
         ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby={titleId}
+        aria-describedby={subtitle ? subtitleId : undefined}
         tabIndex={-1}
         // On phones a sheet that floats just above the bottom edge (so its spring has room); a centred card on larger screens.
         className={`relative z-10 flex max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top))] w-full flex-col overflow-hidden rounded-4xl bg-surface shadow-lift outline-none ring-1 ring-line sm:max-h-[88dvh] sm:max-w-lg ${
@@ -111,8 +114,8 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
       >
         <div className="flex shrink-0 items-start justify-between gap-3 px-[18px] pb-3.5 pt-[18px] sm:px-6 sm:pt-6">
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold leading-tight text-ink-900">{title}</h2>
-            {subtitle && <p className="num mt-1 text-[13px] text-ink-500">{subtitle}</p>}
+            <h2 id={titleId} className="truncate text-lg font-semibold leading-tight text-ink-900">{title}</h2>
+            {subtitle && <p id={subtitleId} className="num mt-1 text-[13px] text-ink-500">{subtitle}</p>}
           </div>
           <button
             type="button"

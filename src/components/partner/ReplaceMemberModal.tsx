@@ -119,6 +119,7 @@ export function ReplaceMemberModal({
 
         <Field label="How is it settled?" group>
           <Segmented
+            label="How is it settled?"
             value={mode}
             onChange={setMode}
             options={[

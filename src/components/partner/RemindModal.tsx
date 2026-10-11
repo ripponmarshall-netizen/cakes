@@ -63,6 +63,7 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => logMessage(partner.id, m.member.id, 'reminder')}
+                    aria-label={`${done ? 'Sent today. Send again' : 'Send'}: WhatsApp reminder to ${m.member.name}`}
                     className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition duration-200 active:scale-95 ${
                       done ? 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/20' : 'bg-ink-900 text-canvas hover:bg-ink-800'
                     }`}

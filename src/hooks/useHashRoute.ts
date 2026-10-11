@@ -16,7 +16,8 @@ export function useHashRoute() {
   useEffect(() => {
     const onChange = () => {
       setRoute(parse(window.location.hash))
-      window.scrollTo({ top: 0 })
+      // Instant: the page has scroll-behavior: smooth, and a new screen shouldn't scroll into view.
+      window.scrollTo({ top: 0, behavior: 'instant' })
     }
     window.addEventListener('hashchange', onChange)
     return () => window.removeEventListener('hashchange', onChange)
