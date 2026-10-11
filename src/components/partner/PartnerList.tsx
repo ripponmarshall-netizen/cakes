@@ -181,7 +181,11 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
             <div className="relative mt-5 grid grid-cols-3 gap-3 border-t border-accent-500/20 pt-4">
               <HeroStat label="Owed now" value={totals.behind} tone={totals.behind > 0 ? 'warn' : undefined} />
               <HeroStat label="At risk" value={totals.exposure} tone={totals.exposure > 0 ? 'bad' : undefined} />
-              <HeroStat label="Your fees" value={totals.feesEarned} sub={`+${formatMoney(totals.feesProjected - totals.feesEarned)}`} />
+              <HeroStat
+                label="Your fees"
+                value={totals.feesEarned}
+                sub={totals.feesProjected > totals.feesEarned ? `+${formatMoney(totals.feesProjected - totals.feesEarned)}` : undefined}
+              />
             </div>
           </section>
 

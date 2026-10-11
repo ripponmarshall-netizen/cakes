@@ -65,6 +65,7 @@ export function AuthScreen() {
       <div className="card p-6 sm:p-8">
         <div className="mb-6">
           <Segmented
+            label="Sign in or create an account"
             value={mode}
             onChange={(m) => {
               setMode(m)

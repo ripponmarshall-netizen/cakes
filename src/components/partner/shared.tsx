@@ -56,10 +56,10 @@ export function Stat({ label, value, sub, tone = 'default' }: { label: string; v
   )
 }
 
-export function ProgressBar({ value, tone = 'brand' }: { value: number; tone?: 'brand' | 'accent' }) {
+export function ProgressBar({ value, label, tone = 'brand' }: { value: number; label: string; tone?: 'brand' | 'accent' }) {
   const pct = Math.max(0, Math.min(1, value)) * 100
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+    <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
       <div
         className={`h-full origin-left animate-grow-x rounded-full transition-[width] duration-700 ease-out ${tone === 'accent' ? 'bg-accent-600' : 'bg-brand-600'}`}
         style={{ width: `${pct}%` }}

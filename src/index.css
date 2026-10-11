@@ -4,13 +4,6 @@
 
 /*
  * Colour tokens, as RGB channels so Tailwind opacity (bg-ink-900/5) works.
- * Light is the default; `data-theme="dark"` on <html> swaps in the dark set
- * (set before first paint by the script in index.html). `.theme-light` pins a
- * subtree to the light set — the emerald hero cards and primary buttons look
- * the same in both themes. Print always uses light.
- */
-/*
- * Colour tokens, as RGB channels so Tailwind opacity (bg-ink-900/5) works.
  * The palette is the Night Shift Calculator's: warm neutrals, hairline
  * borders instead of heavy shadows, a terracotta accent, and green kept for
  * "paid / good". Light is the default; `data-theme="dark"` on <html> swaps in
@@ -99,8 +92,27 @@
     -moz-appearance: textfield;
   }
 
+  /* A visible ring for anything keyboard-focused that doesn't draw its own
+     (controls that do use focus:outline-none plus a focus-visible ring). */
   :focus-visible {
-    outline: none;
+    outline: 2px solid rgb(var(--accent-500) / 0.7);
+    outline-offset: 2px;
+  }
+
+  /* iOS Safari gives date inputs an intrinsic min-width (they spill out of
+     two-column grids on small phones) and centres their text. */
+  input[type='date'] {
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type='date']::-webkit-date-and-time-value {
+    text-align: left;
+  }
+  /* Chrome puts a wide gap before the calendar icon; at 320px that clips the year. */
+  input[type='date']::-webkit-calendar-picker-indicator {
+    margin-inline-start: 2px;
+    padding: 0;
   }
 }
 

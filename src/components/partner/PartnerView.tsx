@@ -259,6 +259,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
       <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 px-4 py-2.5 sm:-mx-6 sm:px-6">
         <Segmented
           size="lg"
+          label="Partner sections"
           value={activeTab}
           onChange={openTab}
           options={[
@@ -310,6 +311,7 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
     <button
       type="button"
       onClick={onClick}
+      aria-label={badge ? `${label} (${badge} behind)` : undefined}
       className="card group relative flex flex-col items-center justify-center gap-1 py-3 text-[12.5px] font-semibold text-ink-700 transition duration-200 hover:text-ink-900 hover:ring-line active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:flex-row sm:gap-2 sm:py-3.5 sm:text-[13px]"
     >
       <Icon name={icon} size={17} className="text-ink-400 transition group-hover:text-accent-600" />

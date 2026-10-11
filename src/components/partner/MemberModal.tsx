@@ -130,15 +130,28 @@ export function MemberModal({
       <Field label="Name">
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" required maxLength={80} autoFocus={!member} />
       </Field>
-      <Field label="Hands" hint={handsN > 0 ? (halfSteps ? `${formatMoney(partner.hand_amount * handsN)} a month` : 'Whole or half hands only') : undefined}>
+      <Field
+        label="Hands"
+        hint={
+          handsN <= 0 ? undefined : !halfSteps ? (
+            <span className="font-semibold text-rose-600">Whole or half hands only</span>
+          ) : handsN > 50 ? (
+            <span className="font-semibold text-rose-600">Up to 50 hands</span>
+          ) : (
+            `${formatMoney(partner.hand_amount * handsN)} a month`
+          )
+        }
+      >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <Input type="number" inputMode="decimal" min={0.5} max={50} step={0.5} value={hands} onChange={(e) => setHands(e.target.value)} className="num font-semibold" required />
-          <span className="flex gap-0.5 rounded-xl bg-ink-50 p-[3px] ring-1 ring-inset ring-line">
+          <span role="group" aria-label="Quick pick" className="flex gap-0.5 rounded-xl bg-ink-50 p-[3px] ring-1 ring-inset ring-line">
             {['0.5', '1', '1.5', '2'].map((h) => (
               <button
                 key={h}
                 type="button"
                 onClick={() => setHands(h)}
+                aria-label={formatHands(Number(h))}
+                aria-pressed={Number(hands) === Number(h)}
                 className={`min-w-[2.5rem] rounded-lg px-2 text-sm font-semibold transition duration-200 ${
                   Number(hands) === Number(h) ? 'bg-ink-900 text-canvas' : 'text-ink-500 hover:text-ink-800'
                 }`}

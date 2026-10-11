@@ -11,7 +11,7 @@ const fieldBase =
 export function Field({ label, hint, group, children }: { label: string; hint?: ReactNode; group?: boolean; children: ReactNode }) {
   const Tag = group ? 'div' : 'label'
   return (
-    <Tag className="block" {...(group ? { role: 'group', 'aria-label': label } : {})}>
+    <Tag className="block min-w-0" {...(group ? { role: 'group', 'aria-label': label } : {})}>
       <span className="mb-1.5 block text-[12.5px] font-medium text-ink-500">{label}</span>
       {children}
       {hint && <span className="mt-1.5 block text-xs leading-relaxed text-ink-400">{hint}</span>}
@@ -20,7 +20,8 @@ export function Field({ label, hint, group, children }: { label: string; hint?: 
 }
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`${fieldBase} h-12 ${props.className ?? ''}`} />
+  // Dates get a tighter right edge so "10/11/2026" and the picker icon fit a half-width column.
+  return <input {...props} className={`${fieldBase} h-12 ${props.type === 'date' ? 'pr-2.5' : ''} ${props.className ?? ''}`} />
 }
 
 /** Number input with a "J$" prefix. */
@@ -83,17 +84,21 @@ export function Toggle({
  * The calculator's segmented control: one pill glides (with a little spring)
  * to the chosen option. Small choices get an ink pill; `lg` is the partner
  * tab bar, styled like the calculator's dock with an accent-tinted pill.
+ * The tab bar is announced as tabs; smaller ones are a choice (radio group).
  */
 export function Segmented<T extends string>({
   value,
   options,
   onChange,
   size = 'md',
+  label,
 }: {
   value: T
   options: { value: T; label: string; icon?: IconName; badge?: number }[]
   onChange: (v: T) => void
   size?: 'md' | 'lg'
+  /** What the choice is, for screen readers. */
+  label?: string
 }) {
   const wrap = useRef<HTMLDivElement>(null)
   const [pill, setPill] = useState<{ left: number; width: number } | null>(null)
@@ -121,7 +126,8 @@ export function Segmented<T extends string>({
   return (
     <div
       ref={wrap}
-      role="tablist"
+      role={tabs ? 'tablist' : 'radiogroup'}
+      aria-label={label}
       className={`relative isolate flex ${
         tabs
           ? 'gap-1 rounded-[20px] bg-surface/90 p-[5px] shadow-float ring-1 ring-line backdrop-blur-xl backdrop-saturate-150'
@@ -138,8 +144,8 @@ export function Segmented<T extends string>({
         <button
           key={o.value}
           type="button"
-          role="tab"
-          aria-selected={value === o.value}
+          role={tabs ? 'tab' : 'radio'}
+          {...(tabs ? { 'aria-selected': value === o.value } : { 'aria-checked': value === o.value })}
           tabIndex={value === o.value ? 0 : -1}
           onClick={() => onChange(o.value)}
           onKeyDown={(e) => {

@@ -34,6 +34,20 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
   const draws = summary.schedule.filter((s) => s.period === current).flatMap((s) => s.shares)
   const selected = rows.find((r) => r.member.id === openRow) ?? null
 
+  // Months other than this one that each member still owes, for the "also owes"
+  // hint. Walks every month per member, so only when the data or month changes.
+  const earlierById = useMemo(() => {
+    const out = new Map<string, number[]>()
+    for (const m of summary.members) {
+      if (m.behind <= 0) continue
+      const months = arrearsByPeriod(partner, members, contributions, m.member.id, summary.period)
+        .map((a) => a.period)
+        .filter((p) => p !== current)
+      if (months.length) out.set(m.member.id, months)
+    }
+    return out
+  }, [summary, partner, members, contributions, current])
+
   const when =
     summary.status === 'upcoming' || current > summary.rawPeriod
       ? 'Upcoming'
@@ -97,15 +111,6 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
     void markPaid([row])
   }
 
-  /** Months before this one that a member still owes, for the "also owes" hint. */
-  const earlier = (r: PeriodRow): number[] => {
-    const m = summary.members.find((x) => x.member.id === r.member.id)
-    if (!m || m.behind <= 0) return []
-    return arrearsByPeriod(partner, members, contributions, r.member.id, summary.period)
-      .map((a) => a.period)
-      .filter((p) => p !== current)
-  }
-  const earlierById = new Map(rows.map((r) => [r.member.id, earlier(r)]))
 
   async function payAll() {
     const total = open.reduce((a, r) => a + r.remaining, 0)
@@ -165,7 +170,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
               )}
             </span>
           </div>
-          <ProgressBar value={due ? paid / due : 0} />
+          <ProgressBar value={due ? paid / due : 0} label={`Paid for ${periodLabel(partner.start_date, current)}`} />
         </div>
 
         {draws.length > 0 && (
@@ -207,7 +212,11 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
       <ul key={current} className="card stagger divide-y divide-line-soft overflow-hidden">
         {rows.map((r, i) => (
           <li key={r.member.id} style={{ ['--i' as string]: i }} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-ink-50/50 sm:px-5">
-            <button type="button" onClick={() => setOpenRow(r.member.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+            <button
+              type="button"
+              onClick={() => setOpenRow(r.member.id)}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left"
+            >
               <Avatar name={r.member.name} id={r.member.id} />
               <div className="min-w-0">
                 <p className="truncate text-[14.5px] font-semibold text-ink-900">{r.member.name}</p>
@@ -221,7 +230,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     formatMoney(r.due)
                   )}
                 </p>
-                {(earlierById.get(r.member.id)?.length ?? 0) > 0 && (
+                {earlierById.has(r.member.id) && (
                   <p className="truncate text-xs font-semibold text-rose-600">Also owes {monthNames(partner.start_date, earlierById.get(r.member.id)!)}</p>
                 )}
               </div>
@@ -254,7 +263,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     <Icon name="message" size={17} />
                   </a>
                 )}
-                <Button size="sm" variant="secondary" onClick={() => payOne(r)}>
+                <Button size="sm" variant="secondary" onClick={() => payOne(r)} aria-label={`Mark ${r.member.name} paid (${formatMoney(r.remaining)})`}>
                   Mark paid
                 </Button>
               </div>

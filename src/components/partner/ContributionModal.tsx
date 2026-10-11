@@ -142,7 +142,7 @@ export function ContributionModal({
           target="_blank"
           rel="noreferrer"
           onClick={() => logMessage(partner.id, row.member.id, 'receipt')}
-          aria-label="Send a receipt on WhatsApp"
+          aria-label={`Send a receipt for ${formatMoney(c.amount)} on WhatsApp`}
           title="Send a receipt on WhatsApp"
           className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-500 transition hover:bg-ink-900/[0.05] hover:text-ink-900 active:scale-90"
         >
@@ -150,7 +150,7 @@ export function ContributionModal({
         </a>
       )}
       {!voided && (
-        <IconButton label="Void payment" onClick={() => setVoiding(c)} className="hover:bg-rose-50 hover:text-rose-600">
+        <IconButton label={`Void ${formatMoney(c.amount)} payment`} onClick={() => setVoiding(c)} className="hover:bg-rose-50 hover:text-rose-600">
           <Icon name="ban" size={16} />
         </IconButton>
       )}

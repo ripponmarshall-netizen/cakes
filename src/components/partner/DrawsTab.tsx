@@ -102,6 +102,7 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
           const isNow = !slot.done && slot.period === summary.rawPeriod
           const overdue = !slot.done && slot.period < summary.rawPeriod
           const [mon, yr] = periodLabel(partner.start_date, slot.period).split(' ')
+          const who = slot.shares.map((s) => memberById.get(s.memberId)?.name ?? 'member').join(' & ')
           return (
             <li
               key={slot.index}
@@ -113,7 +114,11 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
                 type="button"
                 disabled={slot.locked || saving}
                 onClick={() => setMoving(i)}
-                aria-label={slot.locked ? undefined : `Move the month ${slot.period} draw`}
+                aria-label={
+                  slot.locked
+                    ? `Month ${slot.period}, ${mon} ${yr}: ${who} — ${slot.done ? 'paid' : 'part paid'}, locked`
+                    : `Month ${slot.period}, ${mon} ${yr}: move ${who}’s draw`
+                }
                 title={slot.locked ? 'Paid draws are locked' : 'Move this draw'}
                 className={`flex w-12 shrink-0 flex-col items-center self-start rounded-2xl py-1.5 text-center ring-1 ring-inset transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 disabled:active:scale-100 ${
                   slot.done
@@ -123,9 +128,12 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
                       : 'bg-ink-50 text-ink-600 ring-line hover:ring-ink-300'
                 }`}
               >
-                <span className="text-[10.5px] font-medium opacity-75">{mon}</span>
+                {/* The cycle month number, with the calendar month under it ("3" alone over "Mar" reads like a date). */}
+                <span className="text-[9.5px] font-medium opacity-60">Month</span>
                 <span className="mono text-base font-semibold leading-tight">{slot.period}</span>
-                <span className="text-[9px] font-semibold opacity-50">{yr}</span>
+                <span className="whitespace-nowrap text-[9.5px] font-semibold opacity-70">
+                  {mon} ’{yr.slice(-2)}
+                </span>
               </button>
               <div className="min-w-0 flex-1 space-y-2.5">
                 {slot.shares.map((share) => (
@@ -143,6 +151,7 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
               {!slot.locked ? (
                 <div className="flex flex-col self-center">
                   <ReorderButtons
+                    who={who}
                     up={canSwap(i, i - 1) ? () => saveOrder(moveSlot(order, i, i - 1), 'Order updated') : undefined}
                     down={canSwap(i, i + 1) ? () => saveOrder(moveSlot(order, i, i + 1), 'Order updated') : undefined}
                     disabled={saving}
@@ -232,11 +241,11 @@ function ShareRow({
         </p>
       </div>
       {share.payout ? (
-        <IconButton label="Void payout" onClick={onVoid} className="hover:bg-rose-50 hover:text-rose-600">
+        <IconButton label={`Void ${member.name}’s payout`} onClick={onVoid} className="hover:bg-rose-50 hover:text-rose-600">
           <Icon name="undo" size={16} />
         </IconButton>
       ) : (
-        <Button size="sm" variant={status ? 'accent' : 'secondary'} onClick={onPay}>
+        <Button size="sm" variant={status ? 'accent' : 'secondary'} onClick={onPay} aria-label={`Pay out ${member.name} (${formatMoney(share.net)})`}>
           Pay
         </Button>
       )}
@@ -244,15 +253,15 @@ function ShareRow({
   )
 }
 
-function ReorderButtons({ up, down, disabled }: { up?: () => void; down?: () => void; disabled: boolean }) {
+function ReorderButtons({ who, up, down, disabled }: { who: string; up?: () => void; down?: () => void; disabled: boolean }) {
   const cls =
     'flex h-6 w-7 items-center justify-center rounded-lg text-ink-400 transition hover:bg-ink-900/[0.05] hover:text-ink-800 active:scale-90 disabled:pointer-events-none disabled:opacity-20'
   return (
     <>
-      <button type="button" aria-label="Move earlier" onClick={up} disabled={!up || disabled} className={cls}>
+      <button type="button" aria-label={`Move ${who} earlier`} title="Move earlier" onClick={up} disabled={!up || disabled} className={cls}>
         <Icon name="arrow-up" size={15} />
       </button>
-      <button type="button" aria-label="Move later" onClick={down} disabled={!down || disabled} className={cls}>
+      <button type="button" aria-label={`Move ${who} later`} title="Move later" onClick={down} disabled={!down || disabled} className={cls}>
         <Icon name="arrow-down" size={15} />
       </button>
     </>

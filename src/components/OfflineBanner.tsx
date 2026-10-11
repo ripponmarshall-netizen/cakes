@@ -22,7 +22,7 @@ export function OfflineBanner() {
     )
   }
   return (
-    <div className="animate-fade border-t border-amber-200/70 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-900">
+    <div role="status" className="animate-fade border-t border-amber-200/70 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-900">
       <Icon name="wifi-off" size={14} className="mr-1.5 inline -translate-y-px" />
       Offline — payments, payouts and voids are saved on this phone
       {waiting > 0 ? ` (${waiting} waiting)` : ''} and sync when you’re back. Other changes need a signal.

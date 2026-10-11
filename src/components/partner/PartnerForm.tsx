@@ -136,7 +136,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
           <Field label="Hand (per month)">
             <MoneyInput value={hand} onChange={(e) => setHand(e.target.value)} placeholder="10000" required />
           </Field>
-          <Field label="Length (months)">
+          <Field label="Length (months)" hint={termN > 120 ? <span className="font-semibold text-rose-600">Up to 120 months</span> : undefined}>
             <Input type="number" inputMode="numeric" min={1} max={120} value={term} onChange={(e) => setTerm(e.target.value)} className="num font-semibold" required />
           </Field>
         </div>
@@ -158,7 +158,10 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
           <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
         </Field>
 
-        <Field label="Banker fee (taken from each draw)">
+        <Field
+          label="Banker fee (taken from each draw)"
+          hint={feeType === 'percent' && feeN > 100 ? <span className="font-semibold text-rose-600">A percentage fee can’t be over 100%</span> : undefined}
+        >
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
             {feeType === 'flat' ? (
               <MoneyInput value={fee} onChange={(e) => setFee(e.target.value)} />
@@ -170,6 +173,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
             )}
             <div className="flex w-28 [&>*]:flex-1">
               <Segmented
+                label="Fee type"
                 value={feeType}
                 onChange={setFeeType}
                 options={[
