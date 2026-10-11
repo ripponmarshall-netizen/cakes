@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePartnerData } from '../../hooks/usePartnerData'
-import { summarizePartner, type DrawShare } from '../../lib/calc'
+import { summarizePartner, toCents, type DrawShare } from '../../lib/calc'
 import { formatDate, formatHands, formatMoney, formatMoneyShort, periodLabel, timeAgo } from '../../lib/format'
 import { Button, IconButton } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
@@ -18,7 +18,6 @@ import { HistoryModal } from './HistoryModal'
 import { ExportModal } from './ExportModal'
 import { CashCountModal } from './CashCountModal'
 import { NextRoundModal } from './NextRoundModal'
-import { HeroRings } from './PartnerList'
 import { Avatar, type PartnerCtx } from './shared'
 
 type Tab = 'payments' | 'draws' | 'members'
@@ -83,17 +82,17 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
   }
 
   return (
-    <div className="space-y-5">
+    <div className="view space-y-4">
       {/* Hero */}
-      <section className="theme-light relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-6 text-white shadow-lift sm:p-7">
-        <HeroRings />
+      <section className="hero p-5 sm:p-6">
+        <span key={toCents(summary.pot)} className="sheen" aria-hidden />
         <div className="relative flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gold-200 ring-1 ring-inset ring-white/10">
+          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium text-accent-600">
             {status === 'active' && (
               <>
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold-300 opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-gold-300" />
+                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-500 opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-600" />
                 </span>
                 Month {period} of {partner.term_months} · {periodLabel(partner.start_date, period)}
               </>
@@ -101,43 +100,44 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
             {status === 'upcoming' && <>Starts {formatDate(partner.start_date)}</>}
             {status === 'complete' && <>Cycle finished</>}
           </span>
-          <IconButton label="Partner settings" onClick={() => setEditing(true)} className="-mr-2 text-brand-100 hover:bg-white/10 hover:text-white">
+          <IconButton label="Partner settings" onClick={() => setEditing(true)} className="-mr-1.5 text-ink-700">
             <Icon name="settings" size={19} />
           </IconButton>
         </div>
 
         <div className="relative mt-4">
-          <h1 className="font-display text-[1.65rem] font-semibold leading-tight sm:text-3xl">{partner.name}</h1>
-          <p className="num mt-1 text-[13px] text-brand-100/75">
+          <h1 className="font-display text-[1.5rem] font-semibold leading-tight text-ink-900 sm:text-[1.75rem]">{partner.name}</h1>
+          <p className="num mt-1 text-[13px] text-ink-500">
             {formatMoney(terms.hand)} a hand · {formatHands(summary.totalHands)} · {partner.term_months} months
           </p>
         </div>
 
-        <div className="relative mt-6">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-200/80">In the pot now</p>
-          <AnimatedMoney value={summary.pot} className="mt-1.5 block font-display text-[2.6rem] font-semibold leading-none sm:text-5xl" />
-          <p className="num mt-2.5 text-sm text-brand-100/85">
+        <div className="relative mt-5">
+          <p className="text-[13px] font-medium text-ink-500">In the pot now</p>
+          {/* Scales down on narrow phones, so a seven-figure pot stays inside the card. */}
+          <AnimatedMoney value={summary.pot} from={0} duration={900} className="mt-1 block text-[clamp(28px,9vw,40px)] font-bold leading-none text-ink-900" />
+          <p className="num mt-2.5 text-[13px] text-ink-500">
             {summary.pot < 0 ? (
-              <span className="inline-flex items-start gap-1.5 font-semibold text-rose-200">
-                <Icon name="alert" size={14} className="mt-0.5 shrink-0 text-rose-300" /> More has gone out than came in — check for a missing
+              <span className="inline-flex items-start gap-1.5 font-semibold text-rose-600">
+                <Icon name="alert" size={14} className="mt-0.5 shrink-0" /> More has gone out than came in — check for a missing
                 payment or a draw paid early
               </span>
             ) : summary.behind > 0 ? (
               <>
-                Should be <span className="font-semibold text-gold-200">{formatMoney(summary.potIfPaidUp)}</span> · {formatMoney(summary.behind)} still owed
+                Should be <span className="font-semibold text-ink-900">{formatMoney(summary.potIfPaidUp)}</span> · {formatMoney(summary.behind)} still owed
               </>
             ) : status === 'upcoming' ? (
               <>Nothing due yet</>
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <Icon name="check" size={14} className="text-brand-300" /> Everyone is paid up
+                <Icon name="check" size={14} className="text-brand-600" /> Everyone is paid up
               </span>
             )}
           </p>
         </div>
 
-        <div className="relative mt-5 h-1 overflow-hidden rounded-full bg-white/10" aria-hidden>
-          <div className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-200 transition-[width] duration-1000 ease-out" style={{ width: `${progress * 100}%` }} />
+        <div className="relative mt-5 h-1 overflow-hidden rounded-full bg-accent-500/15" aria-hidden>
+          <div className="h-full origin-left animate-grow-x rounded-full bg-accent-600 transition-[width] duration-1000 ease-out" style={{ width: `${progress * 100}%` }} />
         </div>
 
         <div className="relative mt-5 grid grid-cols-3 gap-2 sm:gap-3">
@@ -160,7 +160,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
           {lastGap === 0 ? (
             <span className="font-semibold text-brand-700">matched</span>
           ) : (
-            <span className={`num font-semibold ${lastGap < 0 ? 'text-rose-600' : 'text-sky-700'}`}>
+            <span className={`mono font-semibold ${lastGap < 0 ? 'text-rose-600' : 'text-sky-700'}`}>
               {formatMoney(Math.abs(lastGap))} {lastGap < 0 ? 'short' : 'over'}
             </span>
           )}
@@ -171,9 +171,9 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
         <button
           type="button"
           onClick={() => setPanel('next')}
-          className="pressable flex w-full items-center gap-3 rounded-3xl bg-brand-50/90 p-4 text-left text-brand-900 ring-1 ring-inset ring-brand-600/15"
+          className="pressable flex w-full items-center gap-3 rounded-3xl bg-accent-50 p-4 text-left text-accent-900 ring-1 ring-inset ring-accent-500/25"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-100">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-700">
             <Icon name="sparkle" size={18} />
           </span>
           <span className="min-w-0 flex-1 text-sm leading-relaxed">
@@ -190,7 +190,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
           type="button"
           onClick={() => openTab('members')}
           className={`pressable flex w-full items-start gap-3 rounded-3xl p-4 text-left ring-1 ring-inset ${
-            summary.atRisk > 0 ? 'bg-rose-50/90 text-rose-900 ring-rose-200/80' : 'bg-amber-50/90 text-amber-900 ring-amber-200/80'
+            summary.atRisk > 0 ? 'bg-rose-50 text-rose-900 ring-rose-200/80' : 'bg-amber-50 text-amber-900 ring-amber-200/80'
           }`}
         >
           <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${summary.atRisk > 0 ? 'bg-rose-100' : 'bg-amber-100'}`}>
@@ -211,11 +211,11 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
 
       {/* Next draw */}
       {next && nextShares.length > 0 && (
-        <section className="card relative overflow-hidden p-5">
-          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-gold-300 to-gold-500" aria-hidden />
+        <section className="card relative overflow-hidden p-[18px]">
+          <div className="absolute inset-y-0 left-0 w-1 bg-accent-600" aria-hidden />
           <div className="flex items-center justify-between gap-3">
-            <p className="eyebrow flex items-center gap-1.5">
-              <Icon name="gift" size={13} className="text-gold-500" /> Next draw
+            <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink-900">
+              <Icon name="gift" size={15} className="text-accent-600" /> Next draw
             </p>
             <span className="text-xs font-semibold text-ink-500">
               {periodLabel(partner.start_date, next.period)}
@@ -231,7 +231,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
                 <li key={share.memberId} className="flex items-center gap-3">
                   <Avatar name={m.member.name} id={m.member.id} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-bold text-ink-900">
+                    <p className="truncate text-[14.5px] font-semibold text-ink-900">
                       {m.member.name}
                       {share.half ? (
                         <span className="font-medium text-ink-400"> · ½ hand</span>
@@ -245,7 +245,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
                       {m.behind > 0 && <span className="font-semibold text-rose-600"> · owes {formatMoney(m.behind)}</span>}
                     </p>
                   </div>
-                  <Button variant="gold" size="sm" onClick={() => setPaying(share)}>
+                  <Button variant="accent" size="sm" onClick={() => setPaying(share)}>
                     Pay out
                   </Button>
                 </li>
@@ -256,7 +256,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
       )}
 
       {/* Tabs */}
-      <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 bg-canvas/85 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6">
+      <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 px-4 py-2.5 sm:-mx-6 sm:px-6">
         <Segmented
           size="lg"
           value={activeTab}
@@ -276,7 +276,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
       </div>
 
       {partner.notes && (
-        <section className="rounded-3xl bg-surface/60 p-4 ring-1 ring-inset ring-ink-900/[0.05]">
+        <section className="rounded-3xl bg-surface/60 p-4 ring-1 ring-inset ring-line-soft">
           <p className="eyebrow mb-1.5">Notes</p>
           <p className="whitespace-pre-line text-sm leading-relaxed text-ink-600">{partner.notes}</p>
         </section>
@@ -310,12 +310,13 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
     <button
       type="button"
       onClick={onClick}
-      className="card group relative flex flex-col items-center justify-center gap-1 py-3 text-[12.5px] font-bold text-ink-700 transition duration-200 hover:text-brand-700 hover:shadow-float active:scale-[0.97] sm:flex-row sm:gap-2 sm:py-3.5 sm:text-[13px]"
+      className="card group relative flex flex-col items-center justify-center gap-1 py-3 text-[12.5px] font-semibold text-ink-700 transition duration-200 hover:text-ink-900 hover:ring-line active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:flex-row sm:gap-2 sm:py-3.5 sm:text-[13px]"
     >
-      <Icon name={icon} size={17} className="text-ink-400 transition group-hover:text-brand-600" />
+      <Icon name={icon} size={17} className="text-ink-400 transition group-hover:text-accent-600" />
       {label}
       {badge !== undefined && (
-        <span className="num absolute -right-1 -top-1 min-w-[1.3rem] rounded-full bg-rose-500 px-1.5 text-center text-[11px] font-bold leading-[1.3rem] text-white ring-2 ring-canvas">
+        // Keyed by the count, so it pops when it changes.
+        <span key={badge} className="num absolute -right-1 -top-1 min-w-[1.3rem] animate-pop rounded-full bg-rose-500 px-1.5 text-center text-[11px] font-bold leading-[1.3rem] text-white ring-2 ring-canvas">
           {badge}
         </span>
       )}
@@ -325,12 +326,12 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
 
 function HeroStat({ label, value, sub, subShort }: { label: string; value: number; sub: string; subShort?: string }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-white/[0.06] px-2 py-2.5 ring-1 ring-inset ring-white/[0.08] sm:px-3.5">
-      <p className="truncate text-[10px] font-bold uppercase tracking-[0.04em] text-brand-200/80 min-[360px]:tracking-[0.1em]">{label}</p>
+    <div className="min-w-0 rounded-2xl bg-surface/70 px-2 py-2.5 ring-1 ring-inset ring-accent-500/15 sm:px-3.5">
+      <p className="truncate text-xs font-medium text-ink-500">{label}</p>
       {/* The narrowest phones get short amounts (J$710k) rather than cut-off ones. */}
-      <AnimatedMoney value={value} className="mt-0.5 block truncate text-[13.5px] font-bold tracking-tight max-[359px]:hidden sm:text-lg" />
-      <span className="num mt-0.5 block truncate text-[13.5px] font-bold tracking-tight min-[360px]:hidden">{formatMoneyShort(value)}</span>
-      <p className="num truncate text-[10.5px] tracking-tight text-brand-100/60 sm:text-[11px] sm:tracking-normal">
+      <AnimatedMoney value={value} className="mt-0.5 block truncate text-[13.5px] font-semibold text-ink-900 max-[359px]:hidden sm:text-lg" />
+      <span className="mono mt-0.5 block truncate text-[13.5px] font-semibold text-ink-900 min-[360px]:hidden">{formatMoneyShort(value)}</span>
+      <p className="num truncate text-[10.5px] tracking-tight text-ink-400 sm:text-[11px] sm:tracking-normal">
         <span className={subShort ? 'max-[359px]:hidden' : ''}>{sub}</span>
         {subShort && <span className="min-[360px]:hidden">{subShort}</span>}
       </p>

@@ -91,9 +91,10 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
 
   // Portalled to <body> so no transformed or blurred ancestor can trap it.
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center sm:p-6">
       <div
-        className={`theme-light absolute inset-0 bg-brand-950/55 backdrop-blur-[3px] ${leaving ? 'animate-fade-out' : 'animate-fade'}`}
+        // No backdrop blur: re-blurring the whole screen on every frame of the fade makes sheets stutter on mid-range phones.
+        className={`absolute inset-0 bg-black/60 ${leaving ? 'animate-fade-out' : 'animate-[fade_0.18s_ease-out]'}`}
         onClick={() => !leaving && onClose()}
         aria-hidden
       />
@@ -103,30 +104,30 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-surface shadow-lift outline-none sm:max-w-lg sm:rounded-4xl ${
+        // On phones a sheet that floats just above the bottom edge (so its spring has room); a centred card on larger screens.
+        className={`relative z-10 flex max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top))] w-full flex-col overflow-hidden rounded-4xl bg-surface shadow-lift outline-none ring-1 ring-line sm:max-h-[88dvh] sm:max-w-lg ${
           leaving ? 'pointer-events-none animate-sheet-out sm:animate-pop-out' : 'animate-sheet-in sm:animate-pop-in'
         }`}
       >
-        <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-ink-200 sm:hidden" aria-hidden />
-        <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-4 pt-3 sm:px-7 sm:pt-6">
+        <div className="flex shrink-0 items-start justify-between gap-3 px-[18px] pb-3.5 pt-[18px] sm:px-6 sm:pt-6">
           <div className="min-w-0">
-            <h2 className="truncate font-display text-[1.35rem] font-semibold leading-tight text-ink-900">{title}</h2>
-            {subtitle && <p className="num mt-1 text-sm text-ink-500">{subtitle}</p>}
+            <h2 className="truncate text-lg font-semibold leading-tight text-ink-900">{title}</h2>
+            {subtitle && <p className="num mt-1 text-[13px] text-ink-500">{subtitle}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="-mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-50 text-ink-500 transition hover:bg-ink-100 hover:text-ink-800 focus-visible:ring-2 focus-visible:ring-brand-300"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ink-50 text-ink-700 ring-1 ring-inset ring-line transition hover:bg-ink-100 hover:text-ink-900 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
             aria-label="Close"
           >
             <Icon name="x" size={17} />
           </button>
         </div>
-        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-7 ${footer ? 'pb-4' : 'pb-safe sm:pb-7'}`}>
+        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-[18px] sm:px-6 ${footer ? 'pb-4' : 'pb-5 sm:pb-6'}`}>
           {children}
         </div>
         {footer && (
-          <div className="pb-safe shrink-0 border-t border-ink-100 bg-surface/95 px-5 pt-4 backdrop-blur sm:px-7 sm:pb-6">{footer}</div>
+          <div className="shrink-0 border-t border-line-soft bg-surface px-[18px] pb-[18px] pt-3.5 sm:px-6 sm:pb-6">{footer}</div>
         )}
       </div>
     </div>,

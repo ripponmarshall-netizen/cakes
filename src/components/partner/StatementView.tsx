@@ -26,9 +26,9 @@ export function StatementView({
 
   return (
     <div className="space-y-5 text-ink-800">
-      <div className="border-b border-ink-100 pb-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gold-600">{partner.name}</p>
-        <h2 className="mt-1.5 font-display text-3xl font-semibold text-ink-900">{m.member.name}</h2>
+      <div className="border-b border-line-soft pb-5">
+        <p className="text-[13px] font-medium text-accent-600">{partner.name}</p>
+        <h2 className="mt-1 font-display text-[1.65rem] font-semibold text-ink-900">{m.member.name}</h2>
         <p className="num mt-1 text-sm text-ink-500">
           {formatHands(m.hands)} · {formatMoney(m.monthlyDue)} a month · {partner.term_months} months from {formatDate(partner.start_date)}
         </p>
@@ -47,15 +47,15 @@ export function StatementView({
       </div>
 
       {partner.pay_details?.trim() && (
-        <section className="rounded-2xl bg-gold-50/70 px-4 py-3 ring-1 ring-inset ring-gold-500/20">
-          <h3 className="eyebrow mb-1 !text-gold-700">How to pay</h3>
+        <section className="rounded-2xl bg-accent-500/10 px-4 py-3 ring-1 ring-inset ring-accent-500/25">
+          <h3 className="eyebrow mb-1 !text-accent-700">How to pay</h3>
           <p className="whitespace-pre-line text-sm font-semibold text-ink-800">{partner.pay_details.trim()}</p>
         </section>
       )}
 
       <section>
         <h3 className="eyebrow mb-2">Draws</h3>
-        <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
+        <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
           {m.shares.map((s) => (
             <li key={`${s.slotIndex}-${s.handNo}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
               <span className="min-w-0 font-semibold">
@@ -84,7 +84,7 @@ export function StatementView({
           <p className="text-sm text-ink-400">No payments recorded yet.</p>
         ) : (
           <table className="num w-full text-left text-sm">
-            <thead className="border-b border-ink-200 text-[11px] uppercase tracking-wider text-ink-400">
+            <thead className="border-b border-line text-xs font-medium text-ink-500">
               <tr>
                 <th className="py-1.5 font-semibold">Date</th>
                 <th className="py-1.5 font-semibold">For</th>
@@ -92,7 +92,7 @@ export function StatementView({
                 <th className="py-1.5 text-right font-semibold">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink-100">
+            <tbody className="divide-y divide-line-soft">
               {sorted.map((c) => (
                 <tr key={c.id}>
                   <td className="py-2">{formatDate(c.paid_on)}</td>
@@ -109,18 +109,18 @@ export function StatementView({
       {showSchedule && (
         <section>
           <h3 className="eyebrow mb-2">Full draw order</h3>
-          <ol className="divide-y divide-ink-100 overflow-hidden rounded-2xl text-sm ring-1 ring-inset ring-ink-200/70">
+          <ol className="divide-y divide-line-soft overflow-hidden rounded-2xl text-sm ring-1 ring-inset ring-line">
             {summary.schedule.map((slot) => {
               // The reader's own draws stand out in the list.
               const mine = slot.shares.some((s) => s.memberId === m.member.id)
               return (
-                <li key={slot.index} className={`flex items-center justify-between gap-3 px-4 py-2.5 ${mine ? 'bg-gold-50/70 print:bg-transparent' : ''}`}>
+                <li key={slot.index} className={`flex items-center justify-between gap-3 px-4 py-2.5 ${mine ? 'bg-accent-500/10 print:bg-transparent' : ''}`}>
                   <span className="min-w-0">
                     <span className="num font-semibold">Month {slot.period}</span>{' '}
                     <span className={mine ? 'font-semibold text-ink-900' : 'text-ink-600'}>
                       {slot.shares.map((s) => `${names.get(s.memberId) ?? 'Member'}${s.half ? ' (½)' : ''}`).join(' & ')}
                     </span>
-                    {mine && <span className="ml-1.5 text-[11px] font-bold uppercase tracking-wider text-gold-600">You</span>}
+                    {mine && <span className="ml-1.5 text-xs font-semibold text-accent-600">· you</span>}
                   </span>
                   <span className="shrink-0 whitespace-nowrap text-xs text-ink-400">{slot.done ? '✓ paid' : periodLabel(partner.start_date, slot.period)}</span>
                 </li>
@@ -136,9 +136,9 @@ export function StatementView({
 function Box({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'good' | 'bad' }) {
   const color = tone === 'bad' ? 'text-rose-700' : tone === 'good' ? 'text-brand-700' : 'text-ink-900'
   return (
-    <div className="rounded-2xl bg-ink-50/80 p-3.5 ring-1 ring-inset ring-ink-900/[0.04] print:ring-ink-200">
+    <div className="rounded-2xl bg-ink-50 p-3.5 ring-1 ring-inset ring-line-soft print:ring-ink-200">
       <p className="eyebrow">{label}</p>
-      <p className={`num mt-1 text-[17px] font-extrabold ${color}`}>{value}</p>
+      <p className={`mono mt-1 text-[17px] font-semibold ${color}`}>{value}</p>
       {sub && <p className="num text-xs text-ink-500">{sub}</p>}
     </div>
   )

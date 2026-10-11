@@ -18,6 +18,12 @@ describe('formatMoney', () => {
     expect(formatMoney(-26000)).toBe('−J$26,000')
     expect(formatMoney(Number.NaN)).toBe('J$0')
   })
+
+  it('never shows float dust as a negative zero', () => {
+    expect(formatMoney(-0.004)).toBe('J$0')
+    expect(formatMoney(0.1 + 0.2 - 0.3)).toBe('J$0')
+    expect(formatMoney(-0.01)).toBe('−J$0.01')
+  })
 })
 
 describe('monthsLabel', () => {
@@ -35,5 +41,11 @@ describe('formatMoneyShort', () => {
     expect(formatMoneyShort(1250000)).toBe('J$1.25M')
     expect(formatMoneyShort(-10000)).toBe('−J$10k')
     expect(formatMoneyShort(5000)).toBe('J$5,000')
+  })
+
+  it('moves to millions instead of showing "1000k"', () => {
+    expect(formatMoneyShort(999_940)).toBe('J$999.9k')
+    expect(formatMoneyShort(999_960)).toBe('J$1M')
+    expect(formatMoneyShort(-999_960)).toBe('−J$1M')
   })
 })

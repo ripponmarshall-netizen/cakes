@@ -52,11 +52,13 @@ export function PublicStatement({ token }: { token: string }) {
 
   return (
     <div className="min-h-screen pb-16">
-      <header className="pt-safe sticky top-0 z-30 border-b border-ink-900/[0.06] bg-canvas/75 backdrop-blur-xl print:hidden">
+      <header className="pt-safe sticky top-0 z-30 animate-[fade_0.45s_ease-out_backwards] border-b border-line-soft bg-canvas/85 backdrop-blur-[20px] print:hidden">
         <div className="mx-auto flex h-16 max-w-2xl items-center justify-between gap-3 px-4">
-          <span className="flex items-center gap-2.5">
-            <Logo size={30} />
-            <span className="font-display text-[17px] font-semibold text-ink-900">Your statement</span>
+          <span className="flex min-w-0 items-center gap-3">
+            <span data-splash-target="logo" className="block shrink-0">
+              <Logo size={28} />
+            </span>
+            <span className="truncate text-[clamp(15px,4.6vw,17px)] font-semibold tracking-[-0.01em] text-ink-900">Your statement</span>
           </span>
           {view && (
             <Button size="sm" variant="secondary" onClick={() => window.print()}>
@@ -77,7 +79,7 @@ export function PublicStatement({ token }: { token: string }) {
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-100 text-ink-400">
               <Icon name="link" size={22} />
             </span>
-            <h1 className="mt-4 font-display text-2xl font-semibold text-ink-900">This link doesn’t work</h1>
+            <h1 className="mt-4 text-xl font-semibold text-ink-900">This link doesn’t work</h1>
             <p className="mt-1.5 text-sm text-ink-500">{error ?? 'It may have been reset. Ask your banker to send you a new one.'}</p>
           </div>
         ) : (
@@ -100,7 +102,7 @@ export function PublicStatement({ token }: { token: string }) {
                 showSchedule={view.partner.share_schedule}
               />
             </PrintRoot>
-            <p className="mt-6 flex items-center gap-1.5 border-t border-ink-100 pt-4 text-xs text-ink-400">
+            <p className="mt-6 flex items-center gap-1.5 border-t border-line-soft pt-4 text-xs text-ink-400">
               <Icon name="lock" size={12} className="shrink-0" />
               Read-only copy of the banker’s ledger. Something look wrong? Message your banker.
             </p>

@@ -182,10 +182,10 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
         </Field>
 
         {handN > 0 && termN > 0 && (
-          <div className="animate-fade rounded-2xl bg-gradient-to-br from-brand-50 to-gold-50/60 p-4 text-sm ring-1 ring-inset ring-brand-600/10">
+          <div className="hero animate-fade !rounded-2xl p-4 text-sm">
             <Row label={`Each hand pays ${formatMoney(handN)} × ${termN}`} value={formatMoney(preview.grossPerDraw)} />
             <Row label="Banker fee per draw" value={`− ${formatMoney(preview.feePerDraw)}`} />
-            <div className="my-2 border-t border-brand-600/15" />
+            <div className="my-2 border-t border-dashed border-accent-500/30" />
             <Row label="Member receives per hand" value={formatMoney(preview.netPerDraw)} strong />
           </div>
         )}
@@ -222,7 +222,7 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
               <button
                 type="button"
                 onClick={onNextRound}
-                className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
+                className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-accent-700 transition hover:bg-accent-500/10"
               >
                 <Icon name="sparkle" size={15} /> Start the next round
               </button>
@@ -243,9 +243,9 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className={`flex justify-between gap-3 py-0.5 ${strong ? 'text-[15px] font-bold text-brand-800' : 'text-ink-600'}`}>
+    <div className={`relative flex justify-between gap-3 py-0.5 ${strong ? 'text-[15px] font-semibold text-ink-900' : 'text-ink-500'}`}>
       <span>{label}</span>
-      <span className="num">{value}</span>
+      <span className="mono">{value}</span>
     </div>
   )
 }

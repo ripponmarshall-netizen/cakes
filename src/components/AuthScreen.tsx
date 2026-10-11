@@ -130,24 +130,24 @@ export function AuthScreen() {
   )
 }
 
-/** Emerald band with the brand, and the content card rising over it. */
+/**
+ * The brand over the content card, on the plain page. The loading screen's
+ * logo and title fly onto these two, so they only fade (no movement): the
+ * splash measures where they'll sit while they're still hidden.
+ */
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="theme-light absolute inset-x-0 top-0 h-[46vh] overflow-hidden rounded-b-[3rem] bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950" aria-hidden>
-        <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border-[26px] border-gold-300/[0.08]" />
-        <div className="absolute -left-20 bottom-[-6rem] h-72 w-72 rounded-full bg-brand-400/10 blur-3xl" />
+    <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
+      <div className="mb-7 flex animate-[fade_0.45s_ease-out_backwards] flex-col items-center text-center">
+        <span data-splash-target="logo" className="mb-4 block">
+          <Logo size={64} />
+        </span>
+        <h1 data-splash-target="title" className="text-[26px] font-semibold tracking-[-0.02em] text-ink-900">
+          Partner Ledger
+        </h1>
+        <p className="mt-1.5 text-sm text-ink-500">Hands, payments, the pot and every draw — in one place.</p>
       </div>
-      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
-        <div className="theme-light animate-rise mb-7 text-center text-white">
-          <div className="mb-4 flex justify-center">
-            <Logo size={60} />
-          </div>
-          <h1 className="font-display text-4xl font-semibold">Partner Ledger</h1>
-          <p className="mt-2 text-brand-100/80">Hands, payments, the pot and every draw — in one place.</p>
-        </div>
-        <div className="animate-rise [animation-delay:80ms]">{children}</div>
-      </div>
+      <div className="animate-rise [animation-delay:80ms]">{children}</div>
     </div>
   )
 }

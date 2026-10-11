@@ -23,9 +23,9 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | undefined>(undefined)
 
 const toneStyles: Record<ToastTone, { icon: IconName; dot: string }> = {
-  success: { icon: 'check', dot: 'bg-brand-400 text-brand-950' },
-  error: { icon: 'alert', dot: 'bg-rose-400 text-rose-950' },
-  info: { icon: 'info', dot: 'bg-gold-300 text-ink-900' },
+  success: { icon: 'check', dot: 'bg-brand-600 text-canvas' },
+  error: { icon: 'alert', dot: 'bg-rose-500 text-white' },
+  info: { icon: 'info', dot: 'bg-accent-600 text-accent-ink' },
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -63,15 +63,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             onClick={() => dismiss(t.id)}
-            className={`theme-light pointer-events-auto flex max-w-md cursor-pointer items-center gap-2.5 rounded-2xl bg-ink-900/95 py-2 pl-2.5 text-sm font-semibold text-white shadow-lift ring-1 ring-white/10 backdrop-blur ${
-              t.actions.length ? 'pr-2' : 'pr-4'
+            // The calculator's toast: a frosted pill with an accent-tinted edge.
+            className={`pointer-events-auto flex max-w-md cursor-pointer items-center gap-2.5 rounded-[22px] bg-surface/90 py-1.5 pl-2 text-[13px] font-medium text-ink-900 shadow-lift ring-1 ring-accent-500/35 backdrop-blur-xl backdrop-saturate-150 ${
+              t.actions.length ? 'pr-1.5' : 'pr-4'
             } ${t.leaving ? 'animate-drop-out' : 'animate-drop-in'}`}
           >
             <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${toneStyles[t.tone].dot}`}>
               <Icon name={toneStyles[t.tone].icon} size={13} />
             </span>
             <span className="min-w-0 py-0.5">{t.message}</span>
-            {t.actions.map((a) => (
+            {t.actions.map((a, i) => (
               <button
                 key={a.label}
                 type="button"
@@ -80,7 +81,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   a.onClick()
                   dismiss(t.id)
                 }}
-                className="shrink-0 rounded-xl bg-white/10 px-3 py-1.5 text-[13px] font-bold text-gold-200 transition hover:bg-white/20 active:scale-95"
+                // The first action is the main one (Undo); any others are quieter.
+                className={`min-h-[36px] shrink-0 rounded-full px-3.5 text-[13px] font-semibold transition active:scale-95 ${
+                  i === 0 ? 'bg-accent-600 text-accent-ink hover:bg-accent-700' : 'bg-ink-50 text-ink-900 ring-1 ring-inset ring-line hover:bg-ink-100'
+                }`}
               >
                 {a.label}
               </button>

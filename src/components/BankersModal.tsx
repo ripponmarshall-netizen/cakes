@@ -80,12 +80,12 @@ export function BankersModal({ open, onClose }: { open: boolean; onClose: () => 
       ) : !bankers ? (
         <Spinner />
       ) : (
-        <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
+        <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
           {bankers.map((b) => (
             <li key={b.user_id} className="flex items-center gap-3 px-4 py-3">
               <Avatar name={b.display_name} id={b.user_id} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-ink-900">
+                <p className="truncate font-semibold text-ink-900">
                   {b.display_name}
                   {b.user_id === session?.user.id && <span className="font-medium text-ink-400"> · you</span>}
                 </p>

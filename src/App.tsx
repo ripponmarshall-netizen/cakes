@@ -1,4 +1,11 @@
 import { useEffect } from 'react'
+
+declare global {
+  interface Window {
+    /** Set by index.html: hands the loading screen over to the app. */
+    plSplashDone?: () => void
+  }
+}
 import { useAuth } from './context/AuthContext'
 import { outbox } from './lib/outbox'
 import { useToast } from './components/ui/Toast'
@@ -25,8 +32,15 @@ export default function App() {
   )
 
   // Members' statement links work without an account.
-  if (route.name === 'statement') return <PublicStatement token={route.token} />
-  if (loading || (session && admin.state === 'checking')) return <Spinner fullScreen />
+  const statement = route.name === 'statement'
+  const booting = !statement && (loading || (!!session && admin.state === 'checking'))
+  // Once there's a screen to show, the loading screen flies its logo into the header.
+  useEffect(() => {
+    if (!booting) window.plSplashDone?.()
+  }, [booting])
+
+  if (statement) return <PublicStatement token={route.token} />
+  if (booting) return <Spinner fullScreen />
   if (!session) return <AuthScreen />
   if (admin.state !== 'admin') return <AccessGate admin={admin} />
 
@@ -37,8 +51,8 @@ export default function App() {
       <Header onHome={isPartner ? () => navigate({ name: 'home' }) : undefined} />
       <main className="px-safe">
         <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
-          {/* Keyed so each page fades in when you move between them. */}
-          <div key={isPartner ? route.id : 'home'} className="animate-rise">
+          {/* Keyed so each page's cards rise in again when you move between them. */}
+          <div key={isPartner ? route.id : 'home'}>
             {isPartner ? (
               <PartnerView partnerId={route.id} onGone={() => navigate({ name: 'home' })} onOpen={(id) => navigate({ name: 'partner', id })} />
             ) : (

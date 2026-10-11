@@ -3,10 +3,13 @@ import { formatMoney } from '../../lib/format'
 
 const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-/** A money amount that counts to its new value instead of jumping. */
-export function AnimatedMoney({ value, className = '', duration = 750 }: { value: number; className?: string; duration?: number }) {
-  const [shown, setShown] = useState(value)
-  const from = useRef(value)
+/**
+ * A money amount that counts to its new value instead of jumping, in Geist
+ * Mono. Pass `from={0}` for a hero total that counts up when it first shows.
+ */
+export function AnimatedMoney({ value, className = '', duration = 750, from: start0 }: { value: number; className?: string; duration?: number; from?: number }) {
+  const [shown, setShown] = useState(start0 ?? value)
+  const from = useRef(start0 ?? value)
   const frame = useRef(0)
 
   useEffect(() => {
@@ -29,7 +32,7 @@ export function AnimatedMoney({ value, className = '', duration = 750 }: { value
     return () => cancelAnimationFrame(frame.current)
   }, [value, duration])
 
-  return <span className={`num ${className}`}>{formatMoney(p2(shown, value))}</span>
+  return <span className={`mono ${className}`}>{formatMoney(p2(shown, value))}</span>
 }
 
 // While counting, drop cents so the digits don't flicker; land on the exact value.

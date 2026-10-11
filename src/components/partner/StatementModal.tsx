@@ -3,6 +3,7 @@ import { isLive, ownerResolver, type MemberSummary } from '../../lib/calc'
 import { statementUrl } from '../../lib/format'
 import { statementMessage, waLink } from '../../lib/whatsapp'
 import { logMessage } from '../../lib/ledgerWrites'
+import { uid } from '../../lib/outbox'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
 import { Modal } from '../ui/Modal'
@@ -43,7 +44,7 @@ export function StatementModal({ ctx, m: liveM, onClose }: { ctx: PartnerCtx; m:
       danger: true,
     })
     if (!ok) return
-    const { error } = await supabase.from('members').update({ share_token: crypto.randomUUID() }).eq('id', m!.member.id)
+    const { error } = await supabase.from('members').update({ share_token: uid() }).eq('id', m!.member.id)
     if (error) return toast(error.message, 'error')
     refresh()
     toast('New link created')
@@ -58,7 +59,7 @@ export function StatementModal({ ctx, m: liveM, onClose }: { ctx: PartnerCtx; m:
         </PrintRoot>
       )}
 
-      <div className="mt-6 space-y-3 border-t border-ink-100 pb-2 pt-5">
+      <div className="mt-6 space-y-3 border-t border-line-soft pb-2 pt-5">
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => window.print()}>
             <Icon name="printer" size={16} /> Print / PDF
@@ -73,11 +74,11 @@ export function StatementModal({ ctx, m: liveM, onClose }: { ctx: PartnerCtx; m:
             <Icon name="message" size={16} /> WhatsApp
           </LinkButton>
         </div>
-        <div className="rounded-2xl bg-ink-50/80 p-4 ring-1 ring-inset ring-ink-900/[0.04]">
+        <div className="rounded-2xl bg-ink-50 p-4 ring-1 ring-inset ring-line-soft">
           <p className="eyebrow flex items-center gap-1.5">
             <Icon name="link" size={13} /> Their read-only link
           </p>
-          <p className="mt-2 break-all rounded-xl bg-surface px-3 py-2 font-mono text-[11px] text-ink-600 ring-1 ring-inset ring-ink-200/70">{link}</p>
+          <p className="mt-2 break-all rounded-xl bg-surface px-3 py-2 font-mono text-[11px] text-ink-600 ring-1 ring-inset ring-line">{link}</p>
           <p className="mt-1.5 text-xs text-ink-400">
             Shows only their own payments and draws
             {partner.share_schedule ? ', plus the full draw order with names' : ''}. Change that in partner settings.

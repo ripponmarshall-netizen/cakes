@@ -57,32 +57,42 @@ export function Header({ onHome }: { onHome?: () => void }) {
   }
 
   return (
-    <header ref={ref} className="pt-safe px-safe sticky top-0 z-30 border-b border-ink-900/[0.06] bg-canvas/75 backdrop-blur-xl backdrop-saturate-150">
+    // Fades in only (no movement): the loading screen measures where its logo
+    // and title land on this header while it's still hidden.
+    <header
+      ref={ref}
+      className="pt-safe px-safe sticky top-0 z-30 animate-[fade_0.45s_ease-out_backwards] border-b border-line-soft bg-canvas/85 backdrop-blur-[20px] backdrop-saturate-150"
+    >
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
         {onHome ? (
           <button
             type="button"
             onClick={onHome}
-            className="group -ml-2 flex items-center gap-1 rounded-xl py-1.5 pl-1 pr-3 text-sm font-semibold text-ink-600 transition hover:bg-ink-900/[0.05] hover:text-ink-900 active:scale-[0.97]"
+            className="group -ml-2 flex items-center gap-1 rounded-xl py-1.5 pl-1 pr-3 text-sm font-semibold text-ink-700 transition hover:bg-ink-900/[0.05] hover:text-ink-900 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
           >
             <Icon name="chevron-left" size={20} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
             Partners
           </button>
         ) : (
-          <div className="flex items-center gap-2.5">
-            <Logo size={32} />
-            <span className="font-display text-[17px] font-semibold text-ink-900">Partner Ledger</span>
+          <div className="flex min-w-0 items-center gap-3">
+            {/* The loading screen's logo and title fly onto these two (index.html). */}
+            <span data-splash-target="logo" className="block shrink-0">
+              <Logo size={28} />
+            </span>
+            <h1 data-splash-target="title" className="truncate text-[clamp(15px,4.6vw,17px)] font-semibold tracking-[-0.01em] text-ink-900">
+              Partner Ledger
+            </h1>
           </div>
         )}
 
         <div className="flex items-center gap-1">
           {onHome && (
-            <span className="mr-1 hidden sm:block">
+            <span data-splash-target="logo" className="mr-1 hidden sm:block">
               <Logo size={28} />
             </span>
           )}
           <IconButton label={`${themeState.label} — tap to change`} onClick={() => theme.choose(themeState.next)}>
-            <span key={theme.pref} className="animate-pop-in">
+            <span key={theme.pref} className="animate-pop">
               <Icon name={themeState.icon} size={17} />
             </span>
           </IconButton>
@@ -91,7 +101,7 @@ export function Header({ onHome }: { onHome?: () => void }) {
             onClick={() => setShowBankers(true)}
             aria-label={`Signed in as ${name} — bankers`}
             title={`Signed in as ${name} — tap to manage bankers`}
-            className="theme-light ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gold-200 to-gold-400 text-[11px] font-bold text-ink-900 ring-2 ring-surface transition active:scale-90 focus:outline-none focus-visible:ring-brand-400"
+            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-accent-600 text-[11px] font-bold text-accent-ink ring-2 ring-canvas transition active:scale-90 focus:outline-none focus-visible:ring-accent-500/70"
           >
             {initials(name)}
           </button>

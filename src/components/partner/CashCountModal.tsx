@@ -60,9 +60,9 @@ export function CashCountModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: 
       }
     >
       <form id="cash-count-form" onSubmit={save} className="space-y-4 pb-2">
-        <div className="rounded-2xl bg-ink-50/80 p-4 ring-1 ring-inset ring-ink-900/[0.04]">
+        <div className="rounded-2xl bg-ink-50 p-4 ring-1 ring-inset ring-line-soft">
           <p className="eyebrow">The ledger says the pot holds</p>
-          <p className="num mt-1 text-2xl font-extrabold text-ink-900">{formatMoney(expected)}</p>
+          <p className="mono mt-1 text-2xl font-semibold text-ink-900">{formatMoney(expected)}</p>
           <p className="mt-0.5 text-xs text-ink-500">Everything collected, minus every draw and refund paid out in full. Your fees count as already taken.</p>
         </div>
 
@@ -100,7 +100,7 @@ export function CashCountModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: 
         {past.length > 0 && (
           <section>
             <p className="eyebrow mb-2 mt-2 px-1">Earlier counts</p>
-            <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
+            <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
               {past.map((c) => {
                 const d = Math.round((Number(c.counted) - Number(c.expected)) * 100) / 100
                 return (
