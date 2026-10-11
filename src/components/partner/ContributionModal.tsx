@@ -116,15 +116,15 @@ export function ContributionModal({
     <li key={c.id} className="flex items-center gap-3 px-4 py-3">
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-          voided ? 'bg-ink-100 text-ink-400' : c.method === 'deduction' ? 'bg-gold-100 text-gold-700' : 'bg-brand-50 text-brand-600'
+          voided ? 'bg-ink-100 text-ink-400' : c.method === 'deduction' ? 'bg-accent-100 text-accent-700' : 'bg-brand-50 text-brand-600'
         }`}
       >
         <Icon name={voided ? 'ban' : c.method === 'deduction' ? 'gift' : 'check'} size={14} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className={`num flex items-center gap-2 font-bold ${voided ? 'text-ink-400 line-through' : 'text-ink-900'}`}>
+        <p className={`num flex items-center gap-2 font-semibold ${voided ? 'text-ink-400 line-through' : 'text-ink-900'}`}>
           {formatMoney(c.amount)}
-          <Badge tone={c.method === 'deduction' ? 'gold' : 'gray'} className="no-underline">
+          <Badge tone={c.method === 'deduction' ? 'accent' : 'gray'} className="no-underline">
             {methodLabels[c.method] ?? c.method}
           </Badge>
         </p>
@@ -144,7 +144,7 @@ export function ContributionModal({
           onClick={() => logMessage(partner.id, row.member.id, 'receipt')}
           aria-label="Send a receipt on WhatsApp"
           title="Send a receipt on WhatsApp"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-500 transition hover:bg-brand-50 hover:text-brand-700 active:scale-90"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-500 transition hover:bg-ink-900/[0.05] hover:text-ink-900 active:scale-90"
         >
           <Icon name="message" size={16} />
         </a>
@@ -173,13 +173,13 @@ export function ContributionModal({
       }
     >
       <div className="mb-5 grid grid-cols-2 gap-2.5">
-        <div className="rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-600/10">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-brand-600">Paid</p>
-          <p className="num mt-0.5 text-xl font-extrabold text-brand-800">{formatMoney(row.paid)}</p>
+        <div className="rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-600/15">
+          <p className="text-[12.5px] font-medium text-brand-700">Paid</p>
+          <p className="mono mt-0.5 text-xl font-semibold text-brand-800">{formatMoney(row.paid)}</p>
         </div>
-        <div className={`rounded-2xl p-4 ring-1 ring-inset ${row.remaining > 0 ? 'bg-amber-50 ring-amber-600/15' : 'bg-ink-50 ring-ink-900/[0.04]'}`}>
-          <p className={`text-[11px] font-bold uppercase tracking-[0.12em] ${row.remaining > 0 ? 'text-amber-700' : 'text-ink-400'}`}>Remaining</p>
-          <p className={`num mt-0.5 text-xl font-extrabold ${row.remaining > 0 ? 'text-amber-800' : 'text-ink-400'}`}>
+        <div className={`rounded-2xl p-4 ring-1 ring-inset ${row.remaining > 0 ? 'bg-amber-50 ring-amber-600/15' : 'bg-ink-50 ring-line-soft'}`}>
+          <p className={`text-[12.5px] font-medium ${row.remaining > 0 ? 'text-amber-700' : 'text-ink-500'}`}>Remaining</p>
+          <p className={`mono mt-0.5 text-xl font-semibold ${row.remaining > 0 ? 'text-amber-800' : 'text-ink-400'}`}>
             {row.remaining > 0 ? formatMoney(row.remaining) : 'Settled'}
           </p>
         </div>
@@ -188,7 +188,7 @@ export function ContributionModal({
       {row.entries.length + row.voided.length > 0 && (
         <>
           <p className="eyebrow mb-2 px-1">This month’s payments</p>
-          <ul className="mb-5 divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
+          <ul className="mb-5 divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
             {row.entries.map((c) => entry(c, false))}
             {row.voided.map((c) => entry(c, true))}
           </ul>

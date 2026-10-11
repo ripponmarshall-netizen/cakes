@@ -1,6 +1,6 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent'
 type Size = 'sm' | 'md'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,22 +10,24 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
 }
 
+// The calculator's buttons: primary is ink on the page colour (it inverts
+// with the theme), secondary sits on the sunken tone with a hairline, and
+// the accent is kept for the money moment (paying out a draw).
 const variants: Record<Variant, string> = {
-  primary:
-    'theme-light bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_6px_16px_-8px_rgba(18,59,46,0.7)] hover:from-brand-700 hover:to-brand-800 focus-visible:ring-brand-400',
-  secondary: 'bg-surface text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:ring-ink-300 focus-visible:ring-brand-300',
-  ghost: 'text-ink-600 hover:bg-ink-900/[0.05] hover:text-ink-900 focus-visible:ring-brand-300',
-  danger: 'bg-surface text-rose-600 ring-1 ring-inset ring-rose-200 hover:bg-rose-50 focus-visible:ring-rose-300',
-  gold: 'theme-light bg-gradient-to-b from-gold-300 to-gold-400 text-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_6px_16px_-8px_rgba(141,106,47,0.8)] hover:from-gold-400 hover:to-gold-500 focus-visible:ring-gold-300',
+  primary: 'bg-ink-900 text-canvas hover:bg-ink-800',
+  secondary: 'bg-ink-50 text-ink-900 ring-1 ring-inset ring-line hover:bg-ink-100',
+  ghost: 'text-ink-500 hover:bg-ink-900/[0.05] hover:text-ink-900',
+  danger: 'bg-ink-50 text-rose-600 ring-1 ring-inset ring-rose-200 hover:bg-rose-50',
+  accent: 'bg-accent-600 text-accent-ink hover:bg-accent-700',
 }
 
 const sizes: Record<Size, string> = {
   sm: 'h-9 px-3.5 text-[13px] rounded-xl',
-  md: 'h-12 px-5 text-sm rounded-2xl',
+  md: 'h-11 px-4 text-[13.5px] rounded-xl',
 }
 
 const base =
-  'inline-flex shrink-0 select-none items-center justify-center gap-2 font-semibold transition duration-200 ease-out active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-45'
+  'inline-flex shrink-0 select-none items-center justify-center gap-2 font-semibold transition duration-200 ease-out active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-45'
 
 export function buttonClass(variant: Variant = 'primary', size: Size = 'md', className = '') {
   return `${base} ${variants[variant]} ${sizes[size]} ${className}`
@@ -75,7 +77,7 @@ export function IconButton({
       type="button"
       aria-label={label}
       title={label}
-      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-500 transition duration-200 hover:bg-ink-900/[0.05] hover:text-ink-800 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 disabled:pointer-events-none disabled:opacity-25 ${className}`}
+      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-500 transition duration-200 hover:bg-ink-900/[0.05] hover:text-ink-800 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 disabled:pointer-events-none disabled:opacity-25 ${className}`}
       {...props}
     >
       {children}

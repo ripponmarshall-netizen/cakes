@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { arrearsByPeriod, periodRows, type PeriodRow } from '../../lib/calc'
 import { formatHands, formatMoney, methodLabels, monthNames, periodDay, periodLabel, plural, todayIso } from '../../lib/format'
 import { firstName, normalizePhone, receiptMessage, waLink } from '../../lib/whatsapp'
@@ -24,6 +24,9 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
 
   const current = Math.min(period, T)
   const rows = useMemo(() => periodRows(partner, members, contributions, current), [partner, members, contributions, current])
+  // The rows as they are now, for work that resumes after a confirm dialog.
+  const latestRows = useRef(rows)
+  latestRows.current = rows
   const due = rows.reduce((a, r) => a + r.due, 0)
   const paid = rows.reduce((a, r) => a + Math.min(r.paid, r.due), 0)
   const paidCount = rows.filter((r) => r.status === 'paid').length
@@ -117,7 +120,10 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
       confirmLabel: 'Mark all paid',
     })
     if (!ok) return
-    void markPaid(open)
+    // Only what's still owed now: another banker may have recorded some of
+    // these while the dialog was open, and paying from the old list would
+    // record those twice.
+    void markPaid(latestRows.current.filter((r) => r.status !== 'paid'))
   }
 
   const isCurrent = summary.status === 'active' && current === summary.period
@@ -125,29 +131,29 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
   return (
     <div className="space-y-4">
       {/* Month picker + progress */}
-      <div className="card p-5">
+      <div className="card p-[18px]">
         <div className="flex items-center justify-between gap-2">
-          <IconButton label="Previous month" onClick={() => setPeriod(current - 1)} disabled={current <= 1} className="bg-ink-50 ring-1 ring-inset ring-ink-900/[0.05]">
+          <IconButton label="Previous month" onClick={() => setPeriod(current - 1)} disabled={current <= 1} className="h-11 w-11 rounded-2xl bg-ink-50 text-ink-900 ring-1 ring-inset ring-line">
             <Icon name="chevron-left" size={20} />
           </IconButton>
           <div key={current} className="animate-fade min-w-0 text-center">
             <p className="eyebrow">
               {when} · Month {current} of {T}
             </p>
-            <p className="mt-0.5 font-display text-2xl font-semibold text-ink-900">{periodLabel(partner.start_date, current)}</p>
+            <p className="mt-0.5 text-xl font-semibold tracking-[-0.01em] text-ink-900">{periodLabel(partner.start_date, current)}</p>
             <p className="text-xs text-ink-400">due from {periodDay(partner.start_date, current)}</p>
           </div>
-          <IconButton label="Next month" onClick={() => setPeriod(current + 1)} disabled={current >= T} className="bg-ink-50 ring-1 ring-inset ring-ink-900/[0.05]">
+          <IconButton label="Next month" onClick={() => setPeriod(current + 1)} disabled={current >= T} className="h-11 w-11 rounded-2xl bg-ink-50 text-ink-900 ring-1 ring-inset ring-line">
             <Icon name="chevron-right" size={20} />
           </IconButton>
         </div>
 
         <div className="mt-5">
           <div className="mb-2 flex items-baseline justify-between gap-3 text-sm">
-            <span className="num font-bold text-ink-900">
-              {formatMoney(paid)} <span className="font-medium text-ink-400">of {formatMoney(due)}</span>
+            <span className="mono font-semibold text-ink-900">
+              {formatMoney(paid)} <span className="font-normal text-ink-400">of {formatMoney(due)}</span>
             </span>
-            <span className={`text-xs font-bold ${paidCount === rows.length ? 'text-brand-600' : 'text-ink-500'}`}>
+            <span className={`text-xs font-semibold ${paidCount === rows.length ? 'text-brand-600' : 'text-ink-500'}`}>
               {paidCount === rows.length ? (
                 <span className="inline-flex items-center gap-1">
                   <Icon name="check" size={13} /> All paid
@@ -163,16 +169,16 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
         </div>
 
         {draws.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-ink-100 pt-3.5 text-xs text-ink-500">
-            <Icon name="gift" size={14} className="text-gold-500" />
-            <span className="mr-0.5 font-semibold">Drawing this month</span>
+          <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line-soft pt-3.5 text-xs text-ink-500">
+            <Icon name="gift" size={14} className="text-accent-600" />
+            <span className="mr-0.5 font-medium">Drawing this month</span>
             {draws.map((d) => {
               const m = members.find((x) => x.id === d.memberId)
               return (
-                <Badge key={`${d.slotIndex}-${d.memberId}`} tone={d.payout ? 'green' : 'gold'}>
+                <Badge key={`${d.slotIndex}-${d.memberId}`} tone={d.payout ? 'green' : 'accent'}>
                   {m?.name ?? '—'}
                   {d.half && ' (½)'}
-                  {d.payout && <Icon name="check" size={11} />}
+                  {d.payout && <Icon name="check" size={11} className="tick" />}
                 </Badge>
               )
             })}
@@ -198,13 +204,13 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
       ) : null}
 
       {/* Member rows */}
-      <ul key={current} className="card stagger divide-y divide-ink-100/80 overflow-hidden">
+      <ul key={current} className="card stagger divide-y divide-line-soft overflow-hidden">
         {rows.map((r, i) => (
           <li key={r.member.id} style={{ ['--i' as string]: i }} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-ink-50/50 sm:px-5">
             <button type="button" onClick={() => setOpenRow(r.member.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
               <Avatar name={r.member.name} id={r.member.id} />
               <div className="min-w-0">
-                <p className="truncate text-[15px] font-bold text-ink-900">{r.member.name}</p>
+                <p className="truncate text-[14.5px] font-semibold text-ink-900">{r.member.name}</p>
                 <p className="num text-xs text-ink-500">
                   {Number(r.member.hands) !== 1 && <>{formatHands(r.member.hands)} · </>}
                   {r.status === 'partial' ? (
@@ -221,10 +227,11 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
               </div>
             </button>
             {r.status === 'paid' ? (
-              <button type="button" onClick={() => setOpenRow(r.member.id)} className="animate-pop-in" aria-label={`${r.member.name}: paid — see details`}>
-                <span className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-50 px-3 text-[13px] font-bold text-brand-700 ring-1 ring-inset ring-brand-600/15">
-                  <span className="theme-light flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-white">
-                    <Icon name="check" size={10} strokeWidth={3} />
+              // Marking paid: the badge springs in, then its tick draws itself.
+              <button type="button" onClick={() => setOpenRow(r.member.id)} className="animate-pop rounded-xl" aria-label={`${r.member.name}: paid — see details`}>
+                <span className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-50 px-3 text-[13px] font-semibold text-brand-700 ring-1 ring-inset ring-brand-600/20">
+                  <span className="flex h-4 w-4 animate-check-pop items-center justify-center rounded-full bg-brand-600 text-canvas">
+                    <Icon name="check" size={10} strokeWidth={3} className="tick" />
                   </span>
                   Paid
                 </span>
@@ -242,7 +249,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     onClick={() => logMessage(partner.id, r.member.id, 'reminder')}
                     aria-label={`Remind ${r.member.name} on WhatsApp`}
                     title="Remind on WhatsApp"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-brand-50 hover:text-brand-700 active:scale-90"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-ink-900/[0.05] hover:text-ink-900 active:scale-90"
                   >
                     <Icon name="message" size={17} />
                   </a>

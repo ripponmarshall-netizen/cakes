@@ -116,7 +116,7 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
       ) : entries.length === 0 ? (
         <p className="py-6 text-center text-sm text-ink-500">Nothing recorded yet.</p>
       ) : (
-        <ol className="relative space-y-4 pb-2 before:absolute before:bottom-3 before:left-[15px] before:top-3 before:w-px before:bg-ink-100">
+        <ol className="relative space-y-4 pb-2 before:absolute before:bottom-3 before:left-[15px] before:top-3 before:w-px before:bg-line">
           {entries.map((e) => {
             const d = describe(e)
             if (!d) return null

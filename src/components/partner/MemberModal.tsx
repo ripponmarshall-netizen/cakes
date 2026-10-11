@@ -133,14 +133,14 @@ export function MemberModal({
       <Field label="Hands" hint={handsN > 0 ? (halfSteps ? `${formatMoney(partner.hand_amount * handsN)} a month` : 'Whole or half hands only') : undefined}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <Input type="number" inputMode="decimal" min={0.5} max={50} step={0.5} value={hands} onChange={(e) => setHands(e.target.value)} className="num font-semibold" required />
-          <span className="flex gap-1 rounded-2xl bg-ink-900/[0.05] p-1">
+          <span className="flex gap-0.5 rounded-xl bg-ink-50 p-[3px] ring-1 ring-inset ring-line">
             {['0.5', '1', '1.5', '2'].map((h) => (
               <button
                 key={h}
                 type="button"
                 onClick={() => setHands(h)}
-                className={`min-w-[2.5rem] rounded-xl px-2 text-sm font-bold transition duration-200 ${
-                  Number(hands) === Number(h) ? 'bg-raised text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-800'
+                className={`min-w-[2.5rem] rounded-lg px-2 text-sm font-semibold transition duration-200 ${
+                  Number(hands) === Number(h) ? 'bg-ink-900 text-canvas' : 'text-ink-500 hover:text-ink-800'
                 }`}
               >
                 {formatHands(Number(h)).split(' ')[0]}
@@ -260,7 +260,7 @@ export function MemberModal({
               {member.phone && (
                 <a
                   href={`tel:${member.phone}`}
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50"
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-ink-700 underline underline-offset-[3px] transition hover:text-ink-900"
                 >
                   <Icon name="phone" size={12} /> {member.phone}
                 </a>
@@ -299,7 +299,7 @@ export function MemberModal({
             </div>
 
             <p className="eyebrow mb-2 mt-6 px-1">Draws</p>
-            <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
+            <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
               {s.shares.map((slot) => {
                 const overdue = !slot.payout && slot.period < ctx.summary.rawPeriod
                 const thisMonth = !slot.payout && slot.period === ctx.summary.rawPeriod
@@ -308,7 +308,7 @@ export function MemberModal({
                     <span className="flex items-center gap-2.5 font-semibold text-ink-800">
                       <span
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                          slot.payout ? 'bg-brand-50 text-brand-600' : overdue ? 'bg-rose-50 text-rose-500' : 'bg-gold-50 text-gold-600'
+                          slot.payout ? 'bg-brand-50 text-brand-600' : overdue ? 'bg-rose-50 text-rose-500' : 'bg-accent-50 text-accent-600'
                         }`}
                       >
                         <Icon name={slot.payout ? 'check' : 'gift'} size={15} />
@@ -326,7 +326,7 @@ export function MemberModal({
                         <Icon name="check" size={11} /> {formatMoney(slot.payout.net)} · {formatShortDate(slot.payout.paid_on)}
                       </Badge>
                     ) : (
-                      <Badge tone={overdue ? 'red' : thisMonth ? 'gold' : 'gray'}>
+                      <Badge tone={overdue ? 'red' : thisMonth ? 'accent' : 'gray'}>
                         {overdue ? 'Overdue' : `${formatMoney(slot.net)} · ${thisMonth ? 'this month' : 'upcoming'}`}
                       </Badge>
                     )}
@@ -338,7 +338,7 @@ export function MemberModal({
             {member.notes && (
               <>
                 <p className="eyebrow mb-2 mt-6 px-1">Notes</p>
-                <p className="whitespace-pre-line rounded-2xl bg-ink-50/80 px-4 py-3 text-sm leading-relaxed text-ink-600">{member.notes}</p>
+                <p className="whitespace-pre-line rounded-2xl bg-ink-50 px-4 py-3 text-sm leading-relaxed text-ink-600">{member.notes}</p>
               </>
             )}
           </div>

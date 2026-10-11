@@ -10,6 +10,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field, Input, MoneyInput } from '../ui/Input'
 import { Icon } from '../ui/Icon'
+import { AnimatedMoney } from '../ui/AnimatedMoney'
 import { MethodPicker } from './MethodPicker'
 import { lastMethod, rememberMethod } from './ContributionModal'
 import type { PartnerCtx } from './shared'
@@ -137,7 +138,7 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
           <Button variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="payout-form" variant="gold" className="flex-1" disabled={!valid}>
+          <Button type="submit" form="payout-form" variant="accent" className="flex-1" disabled={!valid}>
             Record payout
           </Button>
         </div>
@@ -145,11 +146,11 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
     >
       <form id="payout-form" onSubmit={submit} className="space-y-4 pb-2">
         {/* What they walk away with */}
-        <div className="theme-light relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 p-5 text-white">
-          <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full border-[14px] border-gold-300/10" aria-hidden />
-          <p className="relative text-[11px] font-bold uppercase tracking-[0.14em] text-gold-200/90">{member.name} receives</p>
-          <p className="num relative mt-1 font-display text-4xl font-semibold">{formatMoney(handOverC / 100)}</p>
-          <div className="num relative mt-3 space-y-0.5 border-t border-white/10 pt-3 text-[13px] text-brand-100/85">
+        <div className="hero !rounded-3xl p-[18px]">
+          <span key={handOverC} className="sheen" aria-hidden />
+          <p className="relative text-[13px] font-medium text-accent-600">{member.name} receives</p>
+          <AnimatedMoney value={handOverC / 100} duration={350} className="relative mt-1 block text-[clamp(26px,8.6vw,34px)] font-bold leading-tight text-ink-900" />
+          <div className="num relative mt-3 space-y-0.5 border-t border-accent-500/20 pt-3 text-[13px] text-ink-500">
             <Line label="Draw" value={formatMoney(grossN)} />
             {feeN > 0 && <Line label="Banker fee" value={`− ${formatMoney(feeN)}`} />}
             {deductC > 0 && <Line label="Arrears taken out" value={`− ${formatMoney(deductC / 100)}`} />}
@@ -157,7 +158,7 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
         </div>
 
         {owedC > 0 && (
-          <div className="rounded-2xl bg-rose-50/90 p-4 text-sm text-rose-900 ring-1 ring-inset ring-rose-200/70">
+          <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-900 ring-1 ring-inset ring-rose-200/70">
             <p className="flex items-start gap-2.5 leading-relaxed">
               <Icon name="alert" size={17} className="mt-0.5 shrink-0 text-rose-500" />
               <span>
@@ -166,7 +167,7 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
               </span>
             </p>
             <label className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl bg-surface/70 px-3 py-2.5 font-semibold ring-1 ring-inset ring-rose-200/60">
-              <input type="checkbox" checked={deduct} onChange={(e) => setDeduct(e.target.checked)} className="h-4 w-4 rounded accent-brand-700" />
+              <input type="checkbox" checked={deduct} onChange={(e) => setDeduct(e.target.checked)} className="h-4 w-4 rounded accent-accent-600" />
               Take it out of this draw
             </label>
           </div>

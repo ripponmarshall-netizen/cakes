@@ -58,7 +58,7 @@ export function NextRoundModal({ ctx, open, onClose, onCreated }: { ctx: Partner
         <Field label="First month starts" hint="Defaults to the day after this round’s last month.">
           <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
         </Field>
-        <div className="rounded-2xl bg-ink-50/80 px-4 py-3 text-sm leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-900/[0.04]">
+        <div className="rounded-2xl bg-ink-50 px-4 py-3 text-sm leading-relaxed text-ink-600 ring-1 ring-inset ring-line-soft">
           Copies the hand ({formatMoney(partner.hand_amount)}), length ({plural(partner.term_months, 'month')}), fee, payment details and
           notes, and everyone still in this round with their hands ({formatHands(summary.totalHands)}). Payments, draws and the draw
           order start fresh — use <strong>Draw lots</strong> once it’s set up. This round stays as it is.

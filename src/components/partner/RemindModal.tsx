@@ -32,15 +32,15 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
     <Modal open={open} onClose={onClose} title="Send reminders" subtitle={`${behind.length} behind · ${formatMoney(summary.behind)} owed`}>
       {behind.length === 0 ? (
         <div className="flex flex-col items-center py-8 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-            <Icon name="check" size={22} />
+          <span className="flex h-12 w-12 animate-check-pop items-center justify-center rounded-full bg-brand-50 text-brand-600">
+            <Icon name="check" size={22} className="tick" />
           </span>
           <p className="mt-3 font-semibold text-ink-800">Everyone is paid up</p>
           <p className="text-sm text-ink-500">Nothing to send.</p>
         </div>
       ) : (
         <>
-          <ul className="divide-y divide-ink-100 rounded-2xl ring-1 ring-inset ring-ink-200/70">
+          <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
             {behind.map(({ m, months }) => {
               const hasPhone = !!normalizePhone(m.member.phone)
               // Logged reminders (kept in the database), so "Sent" survives closing the sheet.
@@ -50,7 +50,7 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
                 <li key={m.member.id} className="flex items-center gap-3 px-4 py-3">
                   <Avatar name={m.member.name} id={m.member.id} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-bold text-ink-900">{m.member.name}</p>
+                    <p className="truncate font-semibold text-ink-900">{m.member.name}</p>
                     <p className="num text-xs leading-relaxed text-ink-500">
                       {m.risk === 'high' && <span className="font-semibold text-rose-600">Drew already · </span>}
                       {formatMoney(m.behind)} · {monthsLabel(months).toLowerCase()}
@@ -64,7 +64,7 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
                     rel="noreferrer"
                     onClick={() => logMessage(partner.id, m.member.id, 'reminder')}
                     className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition duration-200 active:scale-95 ${
-                      done ? 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/15' : 'theme-light bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm hover:to-brand-800'
+                      done ? 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/20' : 'bg-ink-900 text-canvas hover:bg-ink-800'
                     }`}
                   >
                     <Icon name={done ? 'check' : 'message'} size={15} /> {done ? 'Sent' : 'Send'}

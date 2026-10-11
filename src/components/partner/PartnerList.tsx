@@ -102,11 +102,11 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
   const loading = ledger.loading && rows.length === 0
 
   return (
-    <div className="space-y-6">
+    <div className="view space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-          <h1 className="mt-1 font-display text-[1.9rem] font-semibold leading-[1.15] text-ink-900 sm:text-4xl">
+          <h1 className="mt-1 font-display text-[1.75rem] font-semibold leading-[1.15] text-ink-900 sm:text-[2rem]">
             {greeting()}
             {name && (
               <>
@@ -152,32 +152,33 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
       ) : (
         <>
           {/* Across every partner */}
-          <section className="theme-light relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-6 text-white shadow-lift sm:p-7">
-            <HeroRings />
+          <section className="hero p-5 sm:p-6">
+            <span key={toCents(totals.pot)} className="sheen" aria-hidden />
             <div className="relative">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gold-200/90">
+              <p className="text-[13px] font-medium text-accent-600">
                 Cash in hand · {plural(rows.length, 'partner')}
                 {running > 0 && running !== rows.length && <> · {running} running</>}
               </p>
-              <AnimatedMoney value={totals.pot} className="mt-2 block font-display text-[2.6rem] font-semibold leading-none sm:text-5xl" />
-              <p className="num mt-3 text-sm text-brand-100/85">
+              {/* Scales down on narrow phones, so a seven-figure total stays inside the card. */}
+              <AnimatedMoney value={totals.pot} from={0} duration={900} className="mt-1.5 block text-[clamp(28px,9vw,40px)] font-bold leading-none text-ink-900" />
+              <p className="num mt-2.5 text-[13px] text-ink-500">
                 {totals.pot < 0 || rows.some((r) => r.summary.pot < 0) ? (
-                  <span className="inline-flex items-start gap-1.5 font-semibold text-rose-200">
-                    <Icon name="alert" size={14} className="mt-0.5 shrink-0 text-rose-300" />
+                  <span className="inline-flex items-start gap-1.5 font-semibold text-rose-600">
+                    <Icon name="alert" size={14} className="mt-0.5 shrink-0" />
                     {plural(rows.filter((r) => r.summary.pot < 0).length, 'pot is', 'pots are')} below zero — more paid out than collected
                   </span>
                 ) : totals.behind > 0 ? (
                   <>
-                    Should be <span className="font-semibold text-gold-200">{formatMoney(totals.potIfPaidUp)}</span> · {formatMoney(totals.behind)} still owed
+                    Should be <span className="font-semibold text-ink-900">{formatMoney(totals.potIfPaidUp)}</span> · {formatMoney(totals.behind)} still owed
                   </>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
-                    <Icon name="check" size={14} className="text-brand-300" /> Everyone is paid up
+                    <Icon name="check" size={14} className="text-brand-600" /> Everyone is paid up
                   </span>
                 )}
               </p>
             </div>
-            <div className="relative mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
+            <div className="relative mt-5 grid grid-cols-3 gap-3 border-t border-accent-500/20 pt-4">
               <HeroStat label="Owed now" value={totals.behind} tone={totals.behind > 0 ? 'warn' : undefined} />
               <HeroStat label="At risk" value={totals.exposure} tone={totals.exposure > 0 ? 'bad' : undefined} />
               <HeroStat label="Your fees" value={totals.feesEarned} sub={`+${formatMoney(totals.feesProjected - totals.feesEarned)}`} />
@@ -188,12 +189,12 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
           {(dueSoon.length > 0 || owing.length > 0) && (
             <section className="card overflow-hidden">
               <div className="flex items-center justify-between px-5 pb-1 pt-5">
-                <h2 className="font-display text-lg font-semibold text-ink-900">Needs attention</h2>
+                <h2 className="text-[15px] font-semibold tracking-[-0.005em] text-ink-900">Needs attention</h2>
                 <span className="num text-xs font-semibold text-ink-400">{dueSoon.length + owing.length}</span>
               </div>
 
               {dueSoon.length > 0 && (
-                <AttentionGroup icon="gift" title="Draws due" tone="gold">
+                <AttentionGroup icon="gift" title="Draws due" tone="accent">
                   {dueSoon.map(({ partner, share, member, overdue }) => (
                     <AttentionRow
                       key={`${partner.id}-${share.slotIndex}-${share.memberId}`}
@@ -207,7 +208,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
                           {share.half ? ' · ½ hand' : ''} · {partner.name}
                         </>
                       }
-                      right={<span className="num text-sm font-bold text-brand-700">{formatMoney(share.net)}</span>}
+                      right={<span className="mono text-sm font-semibold text-brand-700">{formatMoney(share.net)}</span>}
                     />
                   ))}
                 </AttentionGroup>
@@ -227,14 +228,14 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
                           {partner.name}
                         </>
                       }
-                      right={<span className="num text-sm font-bold text-rose-700">{formatMoney(m.behind)}</span>}
+                      right={<span className="mono text-sm font-semibold text-rose-700">{formatMoney(m.behind)}</span>}
                     />
                   ))}
                   {owing.length > 8 && (
                     <button
                       type="button"
                       onClick={() => setAllOwing((v) => !v)}
-                      className="mx-5 mt-1 rounded-lg px-1 py-1.5 text-xs font-bold text-brand-700 hover:underline"
+                      className="mx-5 mt-1 rounded-lg px-1 py-1.5 text-xs font-semibold text-ink-500 underline underline-offset-[3px] hover:text-ink-900"
                     >
                       {allOwing ? 'Show fewer' : `Show all ${owing.length}`}
                     </button>
@@ -247,7 +248,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
 
           <section>
             <div className="mb-3 flex items-baseline justify-between px-1">
-              <h2 className="font-display text-lg font-semibold text-ink-900">Partners</h2>
+              <h2 className="text-[15px] font-semibold tracking-[-0.005em] text-ink-900">Partners</h2>
               <span className="text-xs font-semibold text-ink-400">{rows.length}</span>
             </div>
             <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -270,37 +271,26 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
   )
 }
 
-/** Decorative brass rings behind the hero numbers. */
-export function HeroRings() {
-  return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
-      <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full border-[22px] border-gold-300/[0.09]" />
-      <div className="absolute -right-6 -top-10 h-44 w-44 rounded-full border border-gold-200/15" />
-      <div className="absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-brand-400/10 blur-3xl" />
-    </div>
-  )
-}
-
 function HeroStat({ label, value, sub, tone }: { label: string; value: number; sub?: string; tone?: 'warn' | 'bad' }) {
-  const dot = tone === 'bad' ? 'bg-rose-400' : tone === 'warn' ? 'bg-gold-300' : 'bg-brand-300/60'
+  const dot = tone === 'bad' ? 'bg-rose-500' : tone === 'warn' ? 'bg-amber-500' : 'bg-ink-300'
   return (
     <div className="min-w-0">
-      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-200/80">
-        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-        {label}
+      <p className="flex items-center gap-1.5 text-xs font-medium text-ink-500">
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+        <span className="truncate">{label}</span>
       </p>
-      <AnimatedMoney value={value} className="mt-1 block truncate text-[15px] font-bold max-[359px]:hidden sm:text-lg" />
-      <span className="num mt-1 block truncate text-[15px] font-bold min-[360px]:hidden">{formatMoneyShort(value)}</span>
-      {sub && <p className="num truncate text-[11px] text-brand-100/60">{sub}</p>}
+      <AnimatedMoney value={value} className="mt-1 block truncate text-[15px] font-semibold text-ink-900 max-[359px]:hidden sm:text-lg" />
+      <span className="mono mt-1 block truncate text-[15px] font-semibold text-ink-900 min-[360px]:hidden">{formatMoneyShort(value)}</span>
+      {sub && <p className="num truncate text-[11px] text-ink-400">{sub}</p>}
     </div>
   )
 }
 
-function AttentionGroup({ icon, title, tone, children }: { icon: IconName; title: string; tone: 'gold' | 'rose'; children: React.ReactNode }) {
+function AttentionGroup({ icon, title, tone, children }: { icon: IconName; title: string; tone: 'accent' | 'rose'; children: React.ReactNode }) {
   return (
     <div className="mt-3">
-      <p className="flex items-center gap-1.5 px-5 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-400">
-        <Icon name={icon} size={13} className={tone === 'gold' ? 'text-gold-500' : 'text-rose-500'} />
+      <p className="flex items-center gap-1.5 px-5 pb-1 text-[12.5px] font-medium text-ink-500">
+        <Icon name={icon} size={13} className={tone === 'accent' ? 'text-accent-500' : 'text-rose-500'} />
         {title}
       </p>
       <ul>{children}</ul>
@@ -311,10 +301,10 @@ function AttentionGroup({ icon, title, tone, children }: { icon: IconName; title
 function AttentionRow({ id, name, sub, right, onClick }: { id: string; name: string; sub: React.ReactNode; right: React.ReactNode; onClick: () => void }) {
   return (
     <li>
-      <button type="button" onClick={onClick} className="group flex w-full items-center gap-3 px-5 py-2.5 text-left transition hover:bg-ink-50/80 active:bg-ink-100/60">
+      <button type="button" onClick={onClick} className="group flex w-full items-center gap-3 px-5 py-2.5 text-left transition hover:bg-ink-50 active:bg-ink-100/60">
         <Avatar name={name} id={id} size="sm" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-semibold text-ink-900">{name}</span>
+          <span className="block truncate text-[14.5px] font-semibold text-ink-900">{name}</span>
           <span className="block truncate text-xs text-ink-500">{sub}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2">{right}</span>
@@ -343,10 +333,10 @@ function PartnerCard({ row, index, onOpen }: { row: Row; index: number; onOpen: 
       type="button"
       onClick={onOpen}
       style={{ ['--i' as string]: index }}
-      className="card group relative flex flex-col p-5 text-left transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-float active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+      className="card group relative flex flex-col p-[18px] text-left transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-float hover:ring-line active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="min-w-0 truncate font-display text-lg font-semibold text-ink-900">{partner.name}</h3>
+        <h3 className="min-w-0 truncate text-base font-semibold tracking-[-0.005em] text-ink-900">{partner.name}</h3>
         {status}
       </div>
       <p className="num mt-0.5 text-[13px] text-ink-500">
@@ -356,13 +346,13 @@ function PartnerCard({ row, index, onOpen }: { row: Row; index: number; onOpen: 
       <div className="mt-5 flex items-end justify-between gap-3">
         <div>
           <p className="eyebrow">In the pot</p>
-          <p className={`num mt-0.5 text-2xl font-extrabold tracking-tight ${s.pot < 0 ? 'text-rose-700' : 'text-ink-900'}`}>{formatMoney(s.pot)}</p>
+          <p className={`mono mt-0.5 text-2xl font-bold ${s.pot < 0 ? 'text-rose-700' : 'text-ink-900'}`}>{formatMoney(s.pot)}</p>
         </div>
-        <Icon name="arrow-right" size={18} className="mb-1.5 text-ink-300 transition duration-300 group-hover:translate-x-1 group-hover:text-brand-600" />
+        <Icon name="arrow-right" size={18} className="mb-1.5 text-ink-300 transition duration-300 group-hover:translate-x-1 group-hover:text-accent-600" />
       </div>
 
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink-100">
-        <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400 transition-[width] duration-700 ease-out" style={{ width: `${progress * 100}%` }} />
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink-100" aria-hidden>
+        <div className="h-full origin-left animate-grow-x rounded-full bg-accent-600 transition-[width] duration-700 ease-out" style={{ width: `${progress * 100}%` }} />
       </div>
 
       {(s.behind > 0 || s.exposure > 0 || s.pot < 0) && (

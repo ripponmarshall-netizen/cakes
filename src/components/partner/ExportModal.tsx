@@ -29,16 +29,16 @@ export function ExportModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
             key={o.title}
             type="button"
             onClick={o.run}
-            className="group flex w-full items-center gap-3.5 rounded-2xl p-4 text-left ring-1 ring-inset ring-ink-200/70 transition duration-200 hover:bg-ink-50/80 hover:ring-ink-300 active:scale-[0.99]"
+            className="group flex w-full items-center gap-3.5 rounded-2xl bg-ink-50 p-4 text-left ring-1 ring-inset ring-line transition duration-200 hover:ring-ink-300 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
           >
-            <span className="theme-light flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 text-gold-200 shadow-sm">
+            <span className="hero flex h-11 w-11 shrink-0 items-center justify-center !rounded-2xl text-accent-600">
               <Icon name="file" size={18} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-bold text-ink-900">{o.title}</span>
+              <span className="block font-semibold text-ink-900">{o.title}</span>
               <span className="block text-xs text-ink-500">{o.body}</span>
             </span>
-            <Icon name="download" size={17} className="shrink-0 text-ink-300 transition group-hover:text-brand-600" />
+            <Icon name="download" size={17} className="shrink-0 text-ink-300 transition group-hover:text-accent-600" />
           </button>
         ))}
       </div>

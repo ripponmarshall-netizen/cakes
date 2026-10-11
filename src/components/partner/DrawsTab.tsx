@@ -32,13 +32,17 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
     )
   }
 
-  async function saveOrder(order: string[], message: string) {
+  async function saveOrder(order: string[], message: string): Promise<boolean> {
     setSaving(true)
     const { error } = await supabase.from('partners').update({ draw_order: order }).eq('id', partner.id)
     setSaving(false)
-    if (error) return toast(error.message, 'error')
+    if (error) {
+      toast(error.message, 'error')
+      return false
+    }
     refresh()
     toast(message)
+    return true
   }
 
   const order = scheduleOrder(schedule)
@@ -73,10 +77,10 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
       <div className="card flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
         <div className="min-w-0">
           <p className="eyebrow">Each draw</p>
-          <p className="num mt-0.5 text-lg font-extrabold text-ink-900">
+          <p className="mono mt-0.5 text-lg font-semibold text-ink-900">
             {formatMoney(terms.netPerDraw)}
             {terms.feePerDraw > 0 && (
-              <span className="ml-1.5 text-xs font-medium text-ink-400">
+              <span className="ml-1.5 font-sans text-xs font-medium tracking-normal text-ink-400">
                 {formatMoney(terms.grossPerDraw)} − {formatMoney(terms.feePerDraw)} fee
               </span>
             )}
@@ -93,7 +97,7 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
         </Button>
       </div>
 
-      <ol className="card stagger divide-y divide-ink-100/80 overflow-hidden">
+      <ol className="card stagger divide-y divide-line-soft overflow-hidden">
         {schedule.map((slot, i) => {
           const isNow = !slot.done && slot.period === summary.rawPeriod
           const overdue = !slot.done && slot.period < summary.rawPeriod
@@ -102,27 +106,25 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
             <li
               key={slot.index}
               style={{ ['--i' as string]: i }}
-              className={`relative flex items-center gap-3 px-3 py-3.5 transition-colors sm:px-4 ${isNow ? 'bg-gradient-to-r from-gold-50 to-transparent' : overdue ? 'bg-rose-50/40' : ''}`}
+              className={`relative flex items-center gap-3 px-3 py-3.5 transition-colors sm:px-4 ${isNow ? 'bg-gradient-to-r from-accent-500/10 to-transparent' : overdue ? 'bg-rose-50/40' : ''}`}
             >
-              {(isNow || overdue) && (
-                <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? 'bg-rose-400' : 'bg-gradient-to-b from-gold-300 to-gold-500'}`} aria-hidden />
-              )}
+              {(isNow || overdue) && <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? 'bg-rose-500' : 'bg-accent-600'}`} aria-hidden />}
               <button
                 type="button"
                 disabled={slot.locked || saving}
                 onClick={() => setMoving(i)}
                 aria-label={slot.locked ? undefined : `Move the month ${slot.period} draw`}
                 title={slot.locked ? 'Paid draws are locked' : 'Move this draw'}
-                className={`flex w-12 shrink-0 flex-col items-center self-start rounded-2xl py-1.5 text-center ring-1 ring-inset transition active:scale-95 disabled:active:scale-100 ${
+                className={`flex w-12 shrink-0 flex-col items-center self-start rounded-2xl py-1.5 text-center ring-1 ring-inset transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 disabled:active:scale-100 ${
                   slot.done
-                    ? 'bg-brand-50 text-brand-700 ring-brand-600/10'
+                    ? 'bg-brand-50 text-brand-700 ring-brand-600/15'
                     : isNow
-                      ? 'bg-surface text-gold-700 ring-gold-400/40 hover:ring-gold-500/60'
-                      : 'bg-ink-50 text-ink-600 ring-ink-900/[0.05] hover:ring-ink-900/20'
+                      ? 'bg-surface text-accent-700 ring-accent-500/40 hover:ring-accent-500/70'
+                      : 'bg-ink-50 text-ink-600 ring-line hover:ring-ink-300'
                 }`}
               >
-                <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">{mon}</span>
-                <span className="num text-base font-extrabold leading-tight">{slot.period}</span>
+                <span className="text-[10.5px] font-medium opacity-75">{mon}</span>
+                <span className="mono text-base font-semibold leading-tight">{slot.period}</span>
                 <span className="text-[9px] font-semibold opacity-50">{yr}</span>
               </button>
               <div className="min-w-0 flex-1 space-y-2.5">
@@ -169,8 +171,8 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
         onClose={() => setMoving(null)}
         onMove={async (to) => {
           if (moving === null) return
-          await saveOrder(moveSlot(order, moving, to), 'Draw moved')
-          setMoving(null)
+          // Stays open if the save fails, so the move can be tried again.
+          if (await saveOrder(moveSlot(order, moving, to), 'Draw moved')) setMoving(null)
         }}
       />
 
@@ -209,21 +211,21 @@ function ShareRow({
         <Avatar name={member.name} id={member.id} size="sm" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="flex min-w-0 items-center gap-1.5 text-[15px] font-bold text-ink-900">
+        <p className="flex min-w-0 items-center gap-1.5 text-[14.5px] font-semibold text-ink-900">
           <span className="truncate">{member.name}</span>
           {multi && !share.half && <span className="shrink-0 text-xs font-medium text-ink-400">hand {share.handNo}</span>}
         </p>
         <p className="text-xs text-ink-500">
           {share.payout ? (
             <span className="num inline-flex items-center gap-1 font-semibold text-brand-700">
-              <Icon name="check" size={12} /> {formatMoney(share.payout.net)} · {formatShortDate(share.payout.paid_on)}
+              <Icon name="check" size={12} className="tick" /> {formatMoney(share.payout.net)} · {formatShortDate(share.payout.paid_on)}
             </span>
           ) : (
             <>
               <span className="num">{formatMoney(share.net)}</span>
               {share.half && <span className="font-semibold text-sky-700"> · ½ hand</span>}
               {status === 'overdue' && <span className="font-semibold text-rose-600"> · overdue</span>}
-              {status === 'now' && <span className="font-semibold text-gold-700"> · this month</span>}
+              {status === 'now' && <span className="font-semibold text-accent-700"> · this month</span>}
               {lone && <span className="text-ink-400"> · no partner yet</span>}
             </>
           )}
@@ -234,7 +236,7 @@ function ShareRow({
           <Icon name="undo" size={16} />
         </IconButton>
       ) : (
-        <Button size="sm" variant={status ? 'gold' : 'secondary'} onClick={onPay}>
+        <Button size="sm" variant={status ? 'accent' : 'secondary'} onClick={onPay}>
           Pay
         </Button>
       )}
@@ -286,9 +288,9 @@ function MoveDrawModal({
   return (
     <Modal open={from !== null} onClose={onClose} title="Move draw" subtitle={who(slots[shownFrom])}>
       {lo === hi && (
-        <p className="mb-3 rounded-2xl bg-ink-50/80 px-4 py-3 text-sm text-ink-600">Paid draws on both sides — there’s nowhere to move this one.</p>
+        <p className="mb-3 rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-600">Paid draws on both sides — there’s nowhere to move this one.</p>
       )}
-      <ol className="divide-y divide-ink-100 rounded-2xl pb-2 ring-1 ring-inset ring-ink-200/70">
+      <ol className="divide-y divide-line-soft rounded-2xl pb-2 ring-1 ring-inset ring-line">
         {slots.map((s, i) => {
           const allowed = i >= lo && i <= hi && i !== shownFrom
           return (
@@ -298,7 +300,7 @@ function MoveDrawModal({
                 disabled={!allowed || saving}
                 onClick={() => onMove(i)}
                 className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                  i === shownFrom ? 'bg-gold-50' : allowed ? 'hover:bg-ink-50 active:bg-ink-100' : 'opacity-45'
+                  i === shownFrom ? 'bg-accent-500/10' : allowed ? 'hover:bg-ink-50 active:bg-ink-100' : 'opacity-45'
                 }`}
               >
                 <span className="num w-20 shrink-0 font-semibold text-ink-800">{periodLabel(startDate, s.period)}</span>
@@ -306,9 +308,9 @@ function MoveDrawModal({
                 {s.locked ? (
                   <Icon name="lock" size={13} className="shrink-0 text-ink-300" />
                 ) : i === shownFrom ? (
-                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-gold-700">Now</span>
+                  <span className="shrink-0 text-xs font-semibold text-accent-700">Here now</span>
                 ) : allowed ? (
-                  <span className="shrink-0 text-xs font-semibold text-brand-700">Move here</span>
+                  <span className="shrink-0 text-xs font-semibold text-ink-900 underline underline-offset-[3px]">Move here</span>
                 ) : null}
               </button>
             </li>

@@ -25,7 +25,7 @@ export function lastReminded(reminders: Reminder[], memberId: string): string | 
 // Muted, harmonised tints: deep text on a soft wash of the same hue.
 const avatarColors = [
   'bg-brand-100 text-brand-800',
-  'bg-gold-100 text-gold-700',
+  'bg-accent-100 text-accent-700',
   'bg-sky-100 text-sky-800',
   'bg-rose-100 text-rose-800',
   'bg-amber-100 text-amber-800',
@@ -48,27 +48,27 @@ export function Avatar({ name, id, size = 'md' }: { name: string; id: string; si
 export function Stat({ label, value, sub, tone = 'default' }: { label: string; value: ReactNode; sub?: ReactNode; tone?: 'default' | 'good' | 'warn' | 'bad' }) {
   const color = tone === 'good' ? 'text-brand-700' : tone === 'warn' ? 'text-amber-700' : tone === 'bad' ? 'text-rose-700' : 'text-ink-900'
   return (
-    <div className="rounded-2xl bg-ink-50/80 p-4 ring-1 ring-inset ring-ink-900/[0.04]">
+    <div className="rounded-2xl bg-ink-50 p-4 ring-1 ring-inset ring-line-soft">
       <p className="eyebrow">{label}</p>
-      <p className={`num mt-1 text-lg font-extrabold tracking-tight ${color}`}>{value}</p>
+      <p className={`mono mt-1 text-lg font-semibold ${color}`}>{value}</p>
       {sub && <p className="num mt-0.5 text-xs text-ink-500">{sub}</p>}
     </div>
   )
 }
 
-export function ProgressBar({ value, tone = 'brand' }: { value: number; tone?: 'brand' | 'gold' }) {
+export function ProgressBar({ value, tone = 'brand' }: { value: number; tone?: 'brand' | 'accent' }) {
   const pct = Math.max(0, Math.min(1, value)) * 100
   return (
     <div className="h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
       <div
-        className={`h-full rounded-full transition-[width] duration-700 ease-out ${tone === 'gold' ? 'bg-gradient-to-r from-gold-400 to-gold-300' : 'bg-gradient-to-r from-brand-600 to-brand-400'}`}
+        className={`h-full origin-left animate-grow-x rounded-full transition-[width] duration-700 ease-out ${tone === 'accent' ? 'bg-accent-600' : 'bg-brand-600'}`}
         style={{ width: `${pct}%` }}
       />
     </div>
   )
 }
 
-/** Small uppercase heading over a group of rows or cards. */
+/** Small label over a group of rows or cards. */
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <div className="mb-2.5 mt-1 flex items-center justify-between gap-3 px-1">

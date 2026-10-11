@@ -53,7 +53,7 @@ export function MembersTab({ ctx }: { ctx: PartnerCtx }) {
       {summary.former.length > 0 && (
         <section className="pt-3">
           <SectionTitle>Left the partner</SectionTitle>
-          <ul className="divide-y divide-ink-100 rounded-3xl bg-surface/50 ring-1 ring-inset ring-ink-900/[0.06]">
+          <ul className="divide-y divide-line-soft rounded-3xl bg-surface/50 ring-1 ring-inset ring-line-soft">
             {summary.former.map((f) => (
               <li key={f.member.id} className="flex items-center gap-3 px-4 py-3 text-sm">
                 <span className="opacity-60 grayscale">
@@ -87,14 +87,14 @@ function MemberCard({ m, startDate, rawPeriod, onOpen }: { m: MemberSummary; sta
     <button
       type="button"
       onClick={onOpen}
-      className={`card group w-full p-4 text-left transition duration-300 ease-out hover:shadow-float active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:p-5 ${
+      className={`card group w-full p-4 text-left transition duration-300 ease-out hover:ring-line active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:p-5 ${
         m.risk === 'high' ? '!ring-rose-300/70' : ''
       }`}
     >
       <div className="flex items-center gap-3">
         <Avatar name={m.member.name} id={m.member.id} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-bold text-ink-900">{m.member.name}</p>
+          <p className="truncate text-[14.5px] font-semibold text-ink-900">{m.member.name}</p>
           <p className="num text-xs text-ink-500">
             {formatHands(m.hands)} · {formatMoney(m.monthlyDue)}/mo
           </p>
@@ -110,20 +110,20 @@ function MemberCard({ m, startDate, rawPeriod, onOpen }: { m: MemberSummary; sta
       )}
 
       <div className="mt-4 h-1 overflow-hidden rounded-full bg-ink-100" aria-hidden>
-        <div className="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400 transition-[width] duration-700 ease-out" style={{ width: `${paidShare * 100}%` }} />
+        <div className="h-full origin-left animate-grow-x rounded-full bg-brand-600 transition-[width] duration-700 ease-out" style={{ width: `${paidShare * 100}%` }} />
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
         <div>
-          <p className="eyebrow !text-[10px]">Paid in</p>
-          <p className="num mt-0.5 font-bold text-ink-800">{formatMoney(m.paid)}</p>
+          <p className="text-[11.5px] font-medium text-ink-500">Paid in</p>
+          <p className="mono mt-0.5 font-semibold text-ink-800">{formatMoney(m.paid)}</p>
         </div>
         <div>
-          <p className="eyebrow !text-[10px]">Gets</p>
-          <p className="num mt-0.5 font-bold text-brand-700">{formatMoney(m.entitlementNet)}</p>
+          <p className="text-[11.5px] font-medium text-ink-500">Gets</p>
+          <p className="mono mt-0.5 font-semibold text-brand-700">{formatMoney(m.entitlementNet)}</p>
         </div>
         <div>
-          <p className="eyebrow !text-[10px]">Draws</p>
+          <p className="text-[11.5px] font-medium text-ink-500">Draws</p>
           <p className="mt-0.5 flex flex-wrap gap-x-1.5 gap-y-0.5">
             {m.shares.map((s) => (
               <span
