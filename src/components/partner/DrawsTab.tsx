@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { moveSlot, scheduleOrder, shuffleUnpaid, type DrawShare, type DrawSlot } from '../../lib/calc'
+import { moveSlot, noDrawMonths, projectedShortfall, scheduleOrder, shuffleUnpaid, type DrawShare, type DrawSlot } from '../../lib/calc'
 import { outcomeMessage, voidRow } from '../../lib/ledgerWrites'
 import { Modal } from '../ui/Modal'
 import { formatDate, formatMoney, formatShortDate, periodLabel, plural } from '../../lib/format'
@@ -23,6 +23,7 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
   const [moving, setMoving] = useState<number | null>(null)
   const { schedule, terms } = summary
   const memberById = new Map(members.map((m) => [m.id, m]))
+  const shortfall = useMemo(() => projectedShortfall(partner, members), [partner, members])
 
   if (schedule.length === 0) {
     return (
@@ -68,7 +69,14 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
     return true
   }
 
-  const perMonth = schedule.length / partner.term_months
+  const skipped = noDrawMonths(partner)
+  const perMonth = schedule.length / (partner.term_months - skipped.length)
+  // Every month in the cycle without a draw — chosen, or left by spreading
+  // fewer draws over more months — shown in its place in the list.
+  const drawn = new Set(schedule.map((s) => s.period))
+  const gaps = Array.from({ length: partner.term_months }, (_, i) => i + 1).filter((m) => !drawn.has(m))
+  const gapsBefore = (i: number) => gaps.filter((m) => m < schedule[i].period && (i === 0 || m > schedule[i - 1].period))
+  const gapsAfterLast = gaps.filter((m) => m > schedule[schedule.length - 1].period)
 
   const paidCount = schedule.filter((x) => x.done).length
 
@@ -88,14 +96,26 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
           <p className="num text-xs text-ink-500">
             {paidCount} of {plural(schedule.length, 'draw')} paid
             {perMonth !== 1 && (
-              <> · {Number.isInteger(perMonth) ? `${perMonth} a month` : `over ${partner.term_months} months`}</>
+              <> · {Number.isInteger(perMonth) ? `${perMonth} a month` : `over ${plural(partner.term_months - skipped.length, 'month')}`}</>
             )}
+            {gaps.length > 0 && <> · {plural(gaps.length, 'month')} with no draw</>}
           </p>
         </div>
         <Button size="sm" variant="secondary" onClick={shuffle} loading={saving} disabled={schedule.every((s) => s.locked)}>
           <Icon name="shuffle" size={15} /> Draw lots
         </Button>
       </div>
+
+      {shortfall && (
+        <p className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
+          <Icon name="alert" size={16} className="mt-px shrink-0" />
+          <span>
+            Even if everyone pays on time, the pot is short for the month {shortfall.period} draw (up to{' '}
+            <strong className="num">{formatMoney(shortfall.short)}</strong>). Move a no-draw month earlier in partner settings, or plan to
+            front it.
+          </span>
+        </p>
+      )}
 
       <ol className="card stagger divide-y divide-line-soft overflow-hidden">
         {schedule.map((slot, i) => {
@@ -104,67 +124,74 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
           const [mon, yr] = periodLabel(partner.start_date, slot.period).split(' ')
           const who = slot.shares.map((s) => memberById.get(s.memberId)?.name ?? 'member').join(' & ')
           return (
-            <li
-              key={slot.index}
-              style={{ ['--i' as string]: i }}
-              className={`relative flex items-center gap-3 px-3 py-3.5 transition-colors sm:px-4 ${isNow ? 'bg-gradient-to-r from-accent-500/10 to-transparent' : overdue ? 'bg-rose-50/40' : ''}`}
-            >
-              {(isNow || overdue) && <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? 'bg-rose-500' : 'bg-accent-600'}`} aria-hidden />}
-              <button
-                type="button"
-                disabled={slot.locked || saving}
-                onClick={() => setMoving(i)}
-                aria-label={
-                  slot.locked
-                    ? `Month ${slot.period}, ${mon} ${yr}: ${who} — ${slot.done ? 'paid' : 'part paid'}, locked`
-                    : `Month ${slot.period}, ${mon} ${yr}: move ${who}’s draw`
-                }
-                title={slot.locked ? 'Paid draws are locked' : 'Move this draw'}
-                className={`flex w-12 shrink-0 flex-col items-center self-start rounded-2xl py-1.5 text-center ring-1 ring-inset tap focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 ${
-                  slot.done
-                    ? 'bg-brand-50 text-brand-700 ring-brand-600/15'
-                    : isNow
-                      ? 'bg-surface text-accent-700 ring-accent-500/40 hover:ring-accent-500/70'
-                      : 'bg-ink-50 text-ink-600 ring-line hover:ring-ink-300'
-                }`}
+            <Fragment key={slot.index}>
+              {gapsBefore(i).map((m) => (
+                <NoDrawRow key={`gap-${m}`} startDate={partner.start_date} period={m} chosen={skipped.includes(m)} />
+              ))}
+              <li
+                style={{ ['--i' as string]: i }}
+                className={`relative flex items-center gap-3 px-3 py-3.5 transition-colors sm:px-4 ${isNow ? 'bg-gradient-to-r from-accent-500/10 to-transparent' : overdue ? 'bg-rose-50/40' : ''}`}
               >
-                {/* The cycle month number, with the calendar month under it ("3" alone over "Mar" reads like a date). */}
-                <span className="text-[9.5px] font-medium opacity-60">Month</span>
-                <span className="mono text-base font-semibold leading-tight">{slot.period}</span>
-                <span className="whitespace-nowrap text-[9.5px] font-semibold opacity-70">
-                  {mon} ’{yr.slice(-2)}
-                </span>
-              </button>
-              <div className="min-w-0 flex-1 space-y-2.5">
-                {slot.shares.map((share) => (
-                  <ShareRow
-                    key={share.memberId}
-                    share={share}
-                    member={memberById.get(share.memberId)}
-                    lone={slot.half && slot.shares.length === 1}
-                    status={overdue ? 'overdue' : isNow ? 'now' : null}
-                    onPay={() => onPay(share)}
-                    onVoid={() => share.payout && setVoiding(share.payout)}
-                  />
-                ))}
-              </div>
-              {!slot.locked ? (
-                <div className="flex flex-col self-center">
-                  <ReorderButtons
-                    who={who}
-                    up={canSwap(i, i - 1) ? () => saveOrder(moveSlot(order, i, i - 1), 'Order updated') : undefined}
-                    down={canSwap(i, i + 1) ? () => saveOrder(moveSlot(order, i, i + 1), 'Order updated') : undefined}
-                    disabled={saving}
-                  />
+                {(isNow || overdue) && <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? 'bg-rose-500' : 'bg-accent-600'}`} aria-hidden />}
+                <button
+                  type="button"
+                  disabled={slot.locked || saving}
+                  onClick={() => setMoving(i)}
+                  aria-label={
+                    slot.locked
+                      ? `Month ${slot.period}, ${mon} ${yr}: ${who} — ${slot.done ? 'paid' : 'part paid'}, locked`
+                      : `Month ${slot.period}, ${mon} ${yr}: move ${who}’s draw`
+                  }
+                  title={slot.locked ? 'Paid draws are locked' : 'Move this draw'}
+                  className={`flex w-12 shrink-0 flex-col items-center self-start rounded-2xl py-1.5 text-center ring-1 ring-inset tap focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 ${
+                    slot.done
+                      ? 'bg-brand-50 text-brand-700 ring-brand-600/15'
+                      : isNow
+                        ? 'bg-surface text-accent-700 ring-accent-500/40 hover:ring-accent-500/70'
+                        : 'bg-ink-50 text-ink-600 ring-line hover:ring-ink-300'
+                  }`}
+                >
+                  {/* The cycle month number, with the calendar month under it ("3" alone over "Mar" reads like a date). */}
+                  <span className="text-[9.5px] font-medium opacity-60">Month</span>
+                  <span className="mono text-base font-semibold leading-tight">{slot.period}</span>
+                  <span className="whitespace-nowrap text-[9.5px] font-semibold opacity-70">
+                    {mon} ’{yr.slice(-2)}
+                  </span>
+                </button>
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  {slot.shares.map((share) => (
+                    <ShareRow
+                      key={share.memberId}
+                      share={share}
+                      member={memberById.get(share.memberId)}
+                      lone={slot.half && slot.shares.length === 1}
+                      status={overdue ? 'overdue' : isNow ? 'now' : null}
+                      onPay={() => onPay(share)}
+                      onVoid={() => share.payout && setVoiding(share.payout)}
+                    />
+                  ))}
                 </div>
-              ) : (
-                <span className="flex w-7 justify-center self-center text-ink-300" title="Paid draws are locked">
-                  <Icon name="lock" size={13} />
-                </span>
-              )}
-            </li>
+                {!slot.locked ? (
+                  <div className="flex flex-col self-center">
+                    <ReorderButtons
+                      who={who}
+                      up={canSwap(i, i - 1) ? () => saveOrder(moveSlot(order, i, i - 1), 'Order updated') : undefined}
+                      down={canSwap(i, i + 1) ? () => saveOrder(moveSlot(order, i, i + 1), 'Order updated') : undefined}
+                      disabled={saving}
+                    />
+                  </div>
+                ) : (
+                  <span className="flex w-7 justify-center self-center text-ink-300" title="Paid draws are locked">
+                    <Icon name="lock" size={13} />
+                  </span>
+                )}
+              </li>
+            </Fragment>
           )
         })}
+        {gapsAfterLast.map((m) => (
+          <NoDrawRow key={`gap-${m}`} startDate={partner.start_date} period={m} chosen={skipped.includes(m)} />
+        ))}
       </ol>
       <p className="px-4 text-center text-xs leading-relaxed text-ink-400">
         Tap a month to move that draw anywhere, or use the arrows to swap neighbours. Paid draws are locked. Two half hands share one
@@ -194,6 +221,24 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
         )}
       </VoidDialog>
     </div>
+  )
+}
+
+/** A month where everyone pays and nobody draws. */
+function NoDrawRow({ startDate, period, chosen }: { startDate: string; period: number; chosen: boolean }) {
+  const [mon, yr] = periodLabel(startDate, period).split(' ')
+  return (
+    <li className="flex items-center gap-3 bg-ink-50/50 px-3 py-2.5 sm:px-4">
+      <span className="flex w-12 shrink-0 flex-col items-center text-center text-ink-400">
+        <span className="mono text-sm font-semibold leading-tight">{period}</span>
+        <span className="whitespace-nowrap text-[9.5px] font-semibold">
+          {mon} ’{yr.slice(-2)}
+        </span>
+      </span>
+      <p className="min-w-0 flex-1 text-xs text-ink-500">
+        <span className="font-semibold text-ink-600">No draw</span> · everyone still pays{chosen ? '' : ' (draws are spread over the cycle)'}
+      </p>
+    </li>
   )
 }
 

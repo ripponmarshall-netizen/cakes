@@ -41,7 +41,12 @@ export function PublicStatement({ token }: { token: string }) {
 
   const view = useMemo(() => {
     if (!data) return null
-    const partner: Partner = { ...data.partner, pay_details: data.partner.pay_details ?? null, notes: null }
+    const partner: Partner = {
+      ...data.partner,
+      pay_details: data.partner.pay_details ?? null,
+      no_draw_months: data.partner.no_draw_months ?? [],
+      notes: null,
+    }
     const members: Member[] = data.members.map((m) => ({ ...m, phone: null, notes: null, share_token: '' }))
     const contributions: Contribution[] = data.contributions.map((c) => ({ ...c, ref: null, note: null, ...noVoid }))
     const payouts: Payout[] = data.payouts.map((p) => ({ ...p, method: 'cash', ref: null, note: null, ...noVoid }))

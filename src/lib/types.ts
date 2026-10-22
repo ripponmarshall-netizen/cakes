@@ -24,6 +24,12 @@ export interface Partner {
    * Reconciled client-side when members or hands change.
    */
   draw_order: string[]
+  /**
+   * Cycle months (1-based) where everyone still pays but nobody draws. The
+   * draws are spread over the other months. Missing on a database without the
+   * v4 migration — read it through noDrawMonths().
+   */
+  no_draw_months: number[]
   /** Whether members' statement links show the whole draw order, with names. */
   share_schedule: boolean
   /** How members pay the banker (Lynk handle, bank account…), shown on their statement. */

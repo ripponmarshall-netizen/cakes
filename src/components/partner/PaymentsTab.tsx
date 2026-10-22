@@ -173,6 +173,15 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
           <ProgressBar value={due ? paid / due : 0} label={`Paid for ${periodLabel(partner.start_date, current)}`} />
         </div>
 
+        {draws.length === 0 && summary.schedule.length > 0 && (
+          <p className="mt-4 flex items-center gap-1.5 border-t border-line-soft pt-3.5 text-xs text-ink-500">
+            <Icon name="gift" size={14} className="text-ink-300" />
+            <span>
+              <span className="font-medium">No draw this month</span> — payments go into the pot
+            </span>
+          </p>
+        )}
+
         {draws.length > 0 && (
           <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line-soft pt-3.5 text-xs text-ink-500">
             <Icon name="gift" size={14} className="text-accent-600" />
@@ -247,7 +256,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
               </button>
             ) : (
               <div className="flex items-center gap-1">
-                {r.member.phone && normalizePhone(r.member.phone) && (
+                {when !== 'Upcoming' && r.member.phone && normalizePhone(r.member.phone) && (
                   <a
                     href={waLink(
                       r.member.phone,

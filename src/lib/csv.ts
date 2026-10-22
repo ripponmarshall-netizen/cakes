@@ -1,4 +1,4 @@
-import type { PartnerSummary } from './calc'
+import { noDrawMonths, type PartnerSummary } from './calc'
 import { methodLabels } from './format'
 import type { Contribution, Member, Partner, Payout } from './types'
 
@@ -88,7 +88,10 @@ export function membersCsv(partner: Partner, summary: PartnerSummary): string {
     ])
   }
   return toCsv([
-    [`${partner.name} — ${partner.term_months} months from ${partner.start_date}, hand ${partner.hand_amount}`],
+    [
+      `${partner.name} — ${partner.term_months} months from ${partner.start_date}, hand ${partner.hand_amount}` +
+        (noDrawMonths(partner).length ? `, no draw in months ${noDrawMonths(partner).join(', ')}` : ''),
+    ],
     ['Name', 'Phone', 'Hands', 'Monthly', 'Paid in', 'Due to date', 'Behind', 'Ahead', 'Still to pay', 'Gets (net)', 'Received', 'At risk', 'Draw months', 'Status'],
     ...rows,
   ])

@@ -15,6 +15,10 @@ import type { Contribution, Member, Partner, Payout } from './types'
  *     running total to W halves (out of H) draws in month ceil(W·T/H). With
  *     T = hands that's one draw a month (the classic partner), and collections
  *     always cover the draws due, as long as everyone pays.
+ *   - Months marked "no draw" still collect but pay nobody: the draws are
+ *     spread the same way over the D months that do draw (month number
+ *     ceil(W·D/H) among them). Draws stay hand × T. Where the gaps are decides
+ *     whether the pot covers each draw; projectedShortfall says when it won't.
  *   - Voided records are ignored everywhere. A replaced member's money counts
  *     toward whoever bought their hand ("buyout"); after a "refund" the new
  *     member starts from scratch.
@@ -297,9 +301,27 @@ export function drawPeriod(cumulative: number, total: number, termMonths: number
   return Math.max(1, Math.ceil((cumulative * termMonths) / total))
 }
 
+/**
+ * The cycle months marked "no draw", cleaned up: whole months inside the
+ * cycle, each once, in order. If every month were marked, none count (a cycle
+ * needs somewhere to draw).
+ */
+export function noDrawMonths(p: Pick<Partner, 'term_months'> & { no_draw_months?: number[] | null }): number[] {
+  const T = p.term_months
+  const months = [...new Set((p.no_draw_months ?? []).map(Number))].filter((m) => Number.isInteger(m) && m >= 1 && m <= T).sort((a, b) => a - b)
+  return months.length < T ? months : []
+}
+
+/** The cycle months that take draws: every month except the "no draw" ones. */
+export function drawMonths(p: Pick<Partner, 'term_months'> & { no_draw_months?: number[] | null }): number[] {
+  const skip = new Set(noDrawMonths(p))
+  return Array.from({ length: p.term_months }, (_, i) => i + 1).filter((m) => !skip.has(m))
+}
+
 export function buildSchedule(partner: Partner, members: Member[], payouts: Payout[]): DrawSlot[] {
   const specs = effectiveDrawOrder(members, partner.draw_order ?? [])
   const t = termsCents(partner)
+  const months = drawMonths(partner)
   const weight = (s: SlotSpec) => (s.half ? s.ids.length : 2)
   const total = specs.reduce((n, s) => n + weight(s), 0)
   const handCount = new Map<string, number>()
@@ -307,7 +329,7 @@ export function buildSchedule(partner: Partner, members: Member[], payouts: Payo
 
   const slots: DrawSlot[] = specs.map((spec, index) => {
     cumulative += weight(spec)
-    const period = drawPeriod(cumulative, total, partner.term_months)
+    const period = months[drawPeriod(cumulative, total, months.length) - 1]
     const amounts = shareCents(t, spec.half)
     const shares = spec.ids.map((memberId): DrawShare => {
       const handNo = (handCount.get(memberId) ?? 0) + 1
@@ -349,6 +371,29 @@ export function buildSchedule(partner: Partner, members: Member[], payouts: Payo
     slot.locked = slot.shares.some((s) => s.payout)
   }
   return slots
+}
+
+/**
+ * If everyone pays on time, the month the pot first can't cover the draws due
+ * by then, and the most it falls short by over the cycle. Null when it always
+ * covers them. A cent or two of half-hand rounding doesn't count.
+ */
+export function projectedShortfall(partner: Partner, members: Member[]): { period: number; short: number } | null {
+  const schedule = buildSchedule(partner, members, [])
+  const hand = toCents(partner.hand_amount)
+  const monthly = Math.round((hand * members.filter(isActive).reduce((n, m) => n + halvesOf(m), 0)) / 2)
+  let drawn = 0
+  let first: number | null = null
+  let worst = 0
+  for (let m = 1; m <= partner.term_months; m++) {
+    for (const slot of schedule) if (slot.period === m) drawn += sumCents(slot.shares, (s) => s.gross)
+    const short = drawn - monthly * m
+    if (short > 100) {
+      first ??= m
+      worst = Math.max(worst, short)
+    }
+  }
+  return first === null ? null : { period: first, short: dollars(worst) }
 }
 
 /** The draw order as stored, from a built schedule. */
