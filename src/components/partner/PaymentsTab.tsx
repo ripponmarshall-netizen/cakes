@@ -138,7 +138,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
       {/* Month picker + progress */}
       <div className="card p-[18px]">
         <div className="flex items-center justify-between gap-2">
-          <IconButton label="Previous month" onClick={() => setPeriod(current - 1)} disabled={current <= 1} className="h-11 w-11 rounded-2xl bg-ink-50 text-ink-900 ring-1 ring-inset ring-line">
+          <IconButton label="Previous month" onClick={() => setPeriod(current - 1)} disabled={current <= 1} className="h-11 w-11">
             <Icon name="chevron-left" size={20} />
           </IconButton>
           <div key={current} className="animate-fade min-w-0 text-center">
@@ -148,7 +148,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
             <p className="mt-0.5 text-xl font-semibold tracking-[-0.01em] text-ink-900">{periodLabel(partner.start_date, current)}</p>
             <p className="text-xs text-ink-400">due from {periodDay(partner.start_date, current)}</p>
           </div>
-          <IconButton label="Next month" onClick={() => setPeriod(current + 1)} disabled={current >= T} className="h-11 w-11 rounded-2xl bg-ink-50 text-ink-900 ring-1 ring-inset ring-line">
+          <IconButton label="Next month" onClick={() => setPeriod(current + 1)} disabled={current >= T} className="h-11 w-11">
             <Icon name="chevron-right" size={20} />
           </IconButton>
         </div>
@@ -258,7 +258,8 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
                     onClick={() => logMessage(partner.id, r.member.id, 'reminder')}
                     aria-label={`Remind ${r.member.name} on WhatsApp`}
                     title="Remind on WhatsApp"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-ink-400 transition hover:bg-ink-900/[0.05] hover:text-ink-900 active:scale-90"
+                    // Gives way on the narrowest phones so names aren't cut short; Remind covers it there.
+                    className="inline-flex h-9 w-9 items-center max-[359px]:hidden justify-center rounded-xl text-ink-400 tap hover:bg-fill hover:text-ink-900"
                   >
                     <Icon name="message" size={17} />
                   </a>

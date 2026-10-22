@@ -23,9 +23,11 @@ function afterSplash(fn: () => void): () => void {
   return () => mo.disconnect()
 }
 
+const SETTLED = 1 - 8 * Math.exp(-7)
+
 /**
- * A money amount that counts to its new value instead of jumping, in Geist
- * Mono. Pass `from={0}` for a hero total that counts up when it first shows.
+ * A money amount that counts to its new value instead of jumping, in tabular
+ * figures. Pass `from={0}` for a hero total that counts up when it first shows.
  */
 export function AnimatedMoney({ value, className = '', duration = 750, from: start0 }: { value: number; className?: string; duration?: number; from?: number }) {
   const [shown, setShown] = useState(start0 ?? value)
@@ -43,7 +45,10 @@ export function AnimatedMoney({ value, className = '', duration = 750, from: sta
     const tick = (now: number) => {
       t0 ||= now
       const p = Math.min(1, (now - t0) / duration)
-      const eased = 1 - Math.pow(1 - p, 3)
+      // A critically damped spring, as the calculator counts: fastest at the
+      // start, easing onto the value without passing it (an overshoot would
+      // flash a wrong amount of money). Scaled to land exactly at p = 1.
+      const eased = (1 - (1 + 7 * p) * Math.exp(-7 * p)) / SETTLED
       const v = p === 1 ? value : Math.round((start + (value - start) * eased) * 100) / 100
       from.current = v
       setShown(v)

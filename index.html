@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Partner" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#faf9f7" />
+    <meta name="theme-color" content="#f2f2f7" />
     <meta name="color-scheme" content="light dark" />
     <script>
       // Pick the theme before first paint so dark mode never flashes light.
@@ -19,49 +19,69 @@
         } catch (e) {}
         var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-        document.querySelector('meta[name=theme-color]').content = dark ? '#161513' : '#faf9f7'
+        document.querySelector('meta[name=theme-color]').content = dark ? '#000000' : '#f2f2f7'
       })()
     </script>
     <!--
       Loading screen, after the Night Shift Calculator's. Inline (not in the
       bundle) so it's styled before any script arrives. While the app loads,
-      the three member dots turn around the circle. When the app has a screen
-      (App.tsx calls plSplashDone), the turn settles, the tile and ring draw
-      themselves in behind the dots, then the logo and title fly onto the
-      header's own (FLIP) while the page drops in beneath them.
+      the three member dots turn around the circle, the title's letters spring
+      up and "Loading" hops. When the app has a screen (App.tsx calls
+      plSplashDone), the turn winds down like a clock spring let go (past the
+      logo's spot and back), the tile lands behind the dots with a squash and
+      a ripple and the ring draws itself, then the logo leaps into the
+      header's (crouch, arc, overshoot, settle) with the title trailing it,
+      while the page drops in beneath them.
     -->
     <style>
       .pl-splash {
-        --pl-bg: #faf9f7;
-        --pl-ink: #1a1815;
-        --pl-faint: #767368;
-        --pl-line: #d8d4cb;
+        --pl-bg: #f2f2f7;
+        --pl-ink: #1d1d1f;
+        --pl-faint: #76767b;
+        --pl-line: #d1d1d6;
+        --pl-accent: #ff9500;
         position: fixed;
         inset: 0;
         z-index: 200;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 10px;
         padding: 24px;
-        background: var(--pl-bg);
         color: var(--pl-ink);
-        font-family: 'Geist Variable', 'Geist', -apple-system, system-ui, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Geist Variable', 'Geist', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
         transition:
           opacity 0.45s ease,
-          visibility 0s linear 0.45s,
-          background-color 0.5s ease;
+          visibility 0s linear 0.45s;
       }
       [data-theme='dark'] .pl-splash {
-        --pl-bg: #161513;
-        --pl-ink: #f5f3ee;
-        --pl-faint: #7f7b71;
-        --pl-line: #36342e;
+        --pl-bg: #000000;
+        --pl-ink: #f5f5f7;
+        --pl-faint: #98989d;
+        --pl-line: #38383a;
+        --pl-accent: #ff9f0a;
+      }
+      /* The backdrop is its own layer, faded by opacity, so clearing it while
+         the logo flies costs the GPU a blend instead of repainting the whole
+         screen on every frame. A soft accent glow sits behind the logo. */
+      .pl-splash::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background:
+          radial-gradient(ellipse 70% 40% at 50% 46%, color-mix(in oklab, var(--pl-accent) 10%, transparent), transparent 70%),
+          var(--pl-bg);
+        transition: opacity 0.5s ease;
       }
       .pl-splash.is-flying {
-        background-color: transparent;
         pointer-events: none;
+      }
+      .pl-splash.is-flying::before {
+        opacity: 0;
       }
       .pl-splash.is-leaving {
         opacity: 0;
@@ -84,12 +104,20 @@
         position: absolute;
         inset: -28px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(202, 101, 60, 0.38), transparent 68%);
+        background: radial-gradient(circle, color-mix(in oklab, var(--pl-accent) 38%, transparent), transparent 68%);
+        opacity: 0;
+      }
+      /* Ripple where the tile lands. */
+      .pl-wave {
+        position: absolute;
+        inset: -6px;
+        border-radius: 26px;
+        border: 2px solid color-mix(in oklab, var(--pl-accent) 70%, transparent);
         opacity: 0;
       }
       .pl-tile {
         opacity: 0;
-        transform: scale(0.6);
+        transform: scale(0.5);
         transform-box: fill-box;
         transform-origin: center;
       }
@@ -115,10 +143,10 @@
         fill: #e0a43c;
       }
       .pl-splash.is-ready .pl-tile {
-        animation: plLogoIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        animation: plTileIn 0.75s forwards;
       }
       .pl-splash.is-ready .pl-ring {
-        animation: plDraw 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards;
+        animation: plDraw 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards;
       }
       .pl-splash.is-ready .pl-track {
         opacity: 0;
@@ -131,9 +159,13 @@
       .pl-splash.is-ready .pl-dot.is-turn {
         fill: #e0a43c;
       }
-      .pl-splash.is-ready .pl-glow {
-        animation: plGlow 1.1s ease-out 0.2s forwards;
+      .pl-splash.is-ready .pl-wave {
+        animation: plWave 0.7s ease-out 0.16s forwards;
       }
+      .pl-splash.is-ready .pl-glow {
+        animation: plGlow 1.1s ease-out 0.16s forwards;
+      }
+      /* The glow belongs to the splash, not the header. */
       .pl-splash.is-flying .pl-glow {
         animation: plGlowOut 0.3s ease-out forwards;
       }
@@ -145,12 +177,48 @@
       .pl-splash.is-ready .pl-splash-sub {
         opacity: 0;
       }
-      /* Matches the header title, which it turns into. */
+      /* Matches the header title, which it turns into. Its letters spring up
+         one after another as the screen opens. */
       .pl-splash-title {
+        position: relative;
         font-size: 17px;
         font-weight: 600;
         letter-spacing: -0.01em;
+        white-space: nowrap;
         transform-origin: left center;
+      }
+      .pl-letters > span {
+        display: inline-block;
+        white-space: pre;
+        animation: plLetterIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+        animation-delay: calc(var(--d) * 26ms + 120ms);
+      }
+      /* "Loading" with three dots hopping in turn, each under gravity. */
+      .pl-dots {
+        display: inline-flex;
+        gap: 3px;
+        margin-left: 4px;
+      }
+      .pl-dots i {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: plHop 1s infinite;
+      }
+      .pl-dots i:nth-child(2) {
+        animation-delay: 0.14s;
+      }
+      .pl-dots i:nth-child(3) {
+        animation-delay: 0.28s;
+      }
+      .sr-only-splash {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
       }
       /* The header's own logo and title stay hidden until the splash copies
          land on them, so the swap is invisible. */
@@ -158,8 +226,9 @@
       .pl-handoff [data-splash-target] {
         visibility: hidden;
       }
+      /* The header logo takes the landing: a squash, then it springs back. */
       .pl-landed {
-        animation: plLand 0.42s ease-out;
+        animation: plBoing 0.75s;
       }
       /* While the splash is up, screen entrances wait, so the cards come in as
          it lifts rather than hidden underneath it. On that first entrance
@@ -169,17 +238,40 @@
         animation-play-state: paused !important;
       }
       .pl-intro {
-        --rise-from: -18px;
-        --rise-dur: 0.65s;
-        --rise-step: 0.08s;
+        --rise-from: -30px;
+        --rise-dur: 0.85s;
+        --rise-step: 0.07s;
       }
       @keyframes plSpin {
         to {
           transform: rotate(360deg);
         }
       }
-      @keyframes plLogoIn {
-        to {
+      /* The tile springs up behind the dots, squashes as it lands and
+         wobbles to rest. */
+      @keyframes plTileIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.5);
+          animation-timing-function: cubic-bezier(0.5, 0, 1, 0.6);
+        }
+        20% {
+          opacity: 1;
+        }
+        30% {
+          transform: scale(1.14, 0.86);
+          animation-timing-function: cubic-bezier(0.1, 0.6, 0.4, 1);
+        }
+        50% {
+          transform: scale(0.95, 1.05);
+        }
+        68% {
+          transform: scale(1.03, 0.97);
+        }
+        84% {
+          transform: scale(0.995, 1.005);
+        }
+        100% {
           opacity: 1;
           transform: none;
         }
@@ -187,6 +279,16 @@
       @keyframes plDraw {
         to {
           stroke-dashoffset: 0;
+        }
+      }
+      @keyframes plWave {
+        from {
+          opacity: 0.6;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 0;
+          transform: scale(1.8);
         }
       }
       @keyframes plGlow {
@@ -211,14 +313,46 @@
           transform: scale(0.6);
         }
       }
-      @keyframes plLand {
-        40% {
-          transform: scale(1.1);
+      @keyframes plBoing {
+        0% {
+          transform: scale(1);
+          animation-timing-function: ease-out;
+        }
+        22% {
+          transform: scale(1.2, 0.8);
+          animation-timing-function: cubic-bezier(0.3, 1.9, 0.45, 0.85);
+        }
+        100% {
+          transform: scale(1);
         }
       }
-      /* Reduced motion: no turning; the finished logo, then a plain fade. */
+      @keyframes plLetterIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px) rotate(10deg) scale(0.6);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes plHop {
+        0%,
+        60%,
+        100% {
+          transform: none;
+          animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+        }
+        30% {
+          transform: translateY(-5px);
+          animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4);
+        }
+      }
+      /* Reduced motion: no turning or hopping; the finished logo, then a plain fade. */
       @media (prefers-reduced-motion: reduce) {
-        .pl-orbit {
+        .pl-orbit,
+        .pl-letters > span,
+        .pl-dots i {
           animation: none;
         }
         .pl-tile {
@@ -227,6 +361,9 @@
         }
         .pl-ring {
           stroke-dashoffset: 0;
+        }
+        .pl-wave {
+          display: none;
         }
         .pl-splash.is-ready .pl-tile,
         .pl-splash.is-ready .pl-ring,
@@ -256,13 +393,45 @@
             root.classList.remove('pl-intro')
           }, 1400)
         }
+        // A damped spring released from rest, as a function of t in [0, 1]:
+        // it settles (to 0.2%) by t = 1 and is nudged to land exactly on 1.
+        // z is the damping ratio: 0.62 overshoots ~8% (the app's
+        // --ease-snappy), 0.78 ~2% (--ease-soft). The calculator's springFn.
+        var springFn = function (z) {
+          var wn = Math.log(500) / z
+          var wd = wn * Math.sqrt(1 - z * z)
+          var k = z / Math.sqrt(1 - z * z)
+          var raw = function (t) {
+            return 1 - Math.exp(-z * wn * t) * (Math.cos(wd * t) + k * Math.sin(wd * t))
+          }
+          var miss = 1 - raw(1)
+          return function (t) {
+            return t <= 0 ? 0 : t >= 1 ? 1 : raw(t) + miss * t * t * t
+          }
+        }
+        var smooth = function (a, b, t) {
+          var u = Math.min(1, Math.max(0, (t - a) / (b - a)))
+          return u * u * (3 - 2 * u)
+        }
         var rect = function (n) {
           var r = n && n.getBoundingClientRect()
           return r && r.width > 0 && r.height > 0 ? r : null
         }
+        // A new animation normally waits for the next frame to start, and
+        // holds its first keyframe until then: a moving part taken over
+        // mid-turn would stand still for a frame or two. Starting it at this
+        // frame's time (the time its current position was read at) carries
+        // the motion straight on.
+        var startNow = function (a) {
+          var now = document.timeline && document.timeline.currentTime
+          if (a && now != null) a.startTime = now
+          return a
+        }
 
-        // Ease the turning dots to a stop exactly where the logo has them,
-        // then call next. Falls back to stopping at once if the browser can't
+        // Wind the turning dots down from wherever they are to where the logo
+        // has them, like a clock spring let go: it keeps the speed it was
+        // turning at, runs a little past the spot and swings back onto it.
+        // Then call next. Falls back to stopping at once if the browser can't
         // read or animate the rotation.
         var settle = function (el, next) {
           var orbit = el.querySelector('.pl-orbit')
@@ -271,16 +440,35 @@
             var m = new DOMMatrix(getComputedStyle(orbit).transform)
             var deg = (Math.atan2(m.b, m.a) * 180) / Math.PI
             if (deg < 0) deg += 360
-            // At least half a turn more, so it visibly winds down.
-            var to = deg > 180 ? 720 : 360
+            // At least a quarter turn more, so it visibly winds in.
+            var to = deg > 270 ? 720 : 360
+            // Simulate a damped spring pulling the dots onto their spot,
+            // starting at the speed they're already turning at (plSpin: a
+            // full turn in 1.4s), so they never stall before winding in. It
+            // runs a little past the spot and swings back onto it.
+            var x = deg
+            var v = 360 / 1400 // deg per ms
+            var w = 0.006 // stiffness (rad/ms)
+            var z = 0.7 // damping ratio: 5–20° past the spot
+            var frames = [{ transform: 'rotate(' + deg.toFixed(2) + 'deg)' }]
+            var ms = 0
+            while (ms < 2000 && (Math.abs(x - to) > 0.2 || Math.abs(v) > 0.002)) {
+              for (var h = 0; h < 16; h++) {
+                v += -w * w * (x - to) - 2 * z * w * v
+                x += v
+              }
+              ms += 16
+              frames.push({ transform: 'rotate(' + x.toFixed(2) + 'deg)' })
+            }
+            frames[frames.length - 1] = { transform: 'rotate(' + to + 'deg)' }
             orbit.style.animation = 'none'
             orbit.style.transform = 'none'
-            var ms = Math.round(Math.max(520, Math.min(900, (to - deg) * 1.6)))
-            orbit.animate([{ transform: 'rotate(' + deg + 'deg)' }, { transform: 'rotate(' + to + 'deg)' }], {
-              duration: ms,
-              easing: 'cubic-bezier(0.2, 0.7, 0.25, 1)',
-            })
-            setTimeout(next, Math.max(0, ms - 160))
+            startNow(orbit.animate(frames, { duration: ms, easing: 'linear' }))
+            // Move on as it first reaches the spot; the swing back plays
+            // under the tile as it lands.
+            var reach = 0
+            while (reach < frames.length - 1 && parseFloat(frames[reach].transform.slice(7)) < to) reach++
+            setTimeout(next, Math.max(0, reach * 16 - 60))
           } catch (e) {
             next()
           }
@@ -308,40 +496,85 @@
             }, 450)
             return
           }
-          var ms = 720
-          var ease = 'cubic-bezier(0.45, 0, 0.15, 1)'
+          var ms = 860
           var s = b.width / a.width
           var dx = b.left + b.width / 2 - (a.left + a.width / 2)
           var dy = b.top + b.height / 2 - (a.top + a.height / 2)
+          // The flight is worked out frame by frame rather than as a few
+          // keyframes, because across and up need different timing: with one
+          // easing for both, the logo would come to a dead stop at the top of
+          // its arc and set off again. Each axis is a damped spring: across
+          // overshoots the header logo a touch and comes back; up leads (it
+          // rises before it moves across, like a jump) and barely overshoots,
+          // so it never leaves the screen.
+          var springX = springFn(0.62)
+          var springY = springFn(0.78)
+          var STEPS = 48 // one keyframe every ~18ms, joined linearly
           root.classList.add('pl-handoff')
           el.classList.add('is-flying')
           el.setAttribute('aria-hidden', 'true')
-          var flight = brand.animate(
-            [{ transform: 'none' }, { transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(' + s + ')' }],
-            { duration: ms, easing: ease, fill: 'forwards' },
-          )
+          // A jump, not a slide: it crouches with its base on the ground
+          // (anticipation), stretches as it springs off, tilts into the turn,
+          // and lands on the header logo's spot.
+          var CROUCH = 0.14
+          var logoFrames = []
+          for (var j = 0; j <= STEPS; j++) {
+            var t = j / STEPS
+            var tau = Math.max(0, (t - CROUCH) / (1 - CROUCH))
+            var g = 1 + (s - 1) * springY(Math.min(1, tau * 1.1))
+            var sq =
+              t < CROUCH
+                ? -0.1 * Math.sin((Math.PI / 2) * (t / CROUCH))
+                : -0.1 + 0.18 * smooth(CROUCH, CROUCH + 0.1, t) - 0.08 * smooth(CROUCH + 0.1, 0.5, t)
+            // While crouching, keep its base planted.
+            var plant = Math.max(0, -sq) * (a.height / 2) * (1 - smooth(CROUCH, CROUCH + 0.08, t))
+            var tilt = Math.sin(Math.PI * smooth(CROUCH, 0.7, t))
+            logoFrames.push({
+              transform:
+                'translate(' +
+                (dx * springX(tau)).toFixed(2) +
+                'px, ' +
+                (dy * springY(Math.min(1, tau * 1.3)) + plant).toFixed(2) +
+                'px) rotate(' +
+                (-12 * tilt * tilt).toFixed(2) +
+                'deg) scale(' +
+                (g * (1 - sq * 0.8)).toFixed(4) +
+                ', ' +
+                (g * (1 + sq)).toFixed(4) +
+                ')',
+            })
+          }
+          var flight = brand.animate(logoFrames, { duration: ms, easing: 'linear', fill: 'forwards' })
           var c = rect(title)
           var d = rect(toTitle)
           if (c && d) {
-            // The header title is left-aligned and may be a little smaller
-            // (it scales with the screen), so pin the left edge.
+            // The header title is left-aligned and may be a little smaller (it
+            // scales with the screen), so pin the left edge. It follows a beat
+            // behind the logo, like a tail, and rises later than the logo
+            // does, so the logo is always clear above it.
             var ts = parseFloat(getComputedStyle(toTitle).fontSize) / parseFloat(getComputedStyle(title).fontSize)
-            title.animate(
-              [
-                { transform: 'none' },
-                { transform: 'translate(' + (d.left - c.left) + 'px, ' + (d.top + d.height / 2 - (c.top + c.height / 2)) + 'px) scale(' + ts + ')' },
-              ],
-              { duration: ms, easing: ease, fill: 'forwards' },
-            )
+            var tx = d.left - c.left
+            var ty = d.top + d.height / 2 - (c.top + c.height / 2)
+            var titleFrames = []
+            for (var k = 0; k <= STEPS; k++) {
+              var u = Math.max(0, (k / STEPS - 0.12) / 0.88)
+              var qx = springX(u)
+              titleFrames.push({
+                transform:
+                  'translate(' + (tx * qx).toFixed(2) + 'px, ' + (ty * springY(Math.pow(u, 1.3))).toFixed(2) + 'px) scale(' + (1 + (ts - 1) * qx).toFixed(4) + ')',
+              })
+            }
+            title.animate(titleFrames, { duration: ms - 90, delay: 80, easing: 'linear', fill: 'forwards' })
           } else {
             title.style.transition = 'opacity 0.3s ease'
             title.style.opacity = '0'
           }
-          // Let the page start falling in once the logo is most of the way
-          // up, so the cards don't fade in underneath it as it passes.
+          // Let the page start falling in once the logo has landed and the
+          // title (trailing it) has risen past the first card, so the cards
+          // don't fade in underneath either of them as they pass.
           setTimeout(function () {
             root.classList.remove('pl-booting')
-          }, ms * 0.55)
+          }, ms * 0.6)
           // Swap to the real logo on the flight's last frame (a timer alone
           // can fire a frame early); the timer is the backstop.
           var landed = false
@@ -368,7 +601,7 @@
               el.setAttribute('aria-busy', 'false')
               later(function () {
                 flyHome(el)
-              }, 1000)
+              }, 1150)
             })
           }, wait)
         }
@@ -382,9 +615,11 @@
     <div id="pl-splash" class="pl-splash" role="status" aria-busy="true">
       <div class="pl-brand" aria-hidden="true">
         <span class="pl-glow"></span>
+        <span class="pl-wave"></span>
         <!-- The tile and ring of the app icon (src/components/Logo.tsx), drawn in once loaded. -->
         <svg viewBox="0 0 64 64" width="96" height="96">
           <rect class="pl-tile" width="64" height="64" rx="14" fill="#0b0b0c" />
+          <rect class="pl-tile" x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="#fff" stroke-opacity="0.14" />
           <circle class="pl-ring" cx="32" cy="32" r="17" fill="none" stroke="#f4f4f5" stroke-width="3.5" transform="rotate(-90 32 32)" />
         </svg>
         <!-- The member dots: they turn while loading and stop where the icon has them. -->
@@ -397,8 +632,10 @@
           </g>
         </svg>
       </div>
-      <div class="pl-splash-title">Partner Ledger</div>
-      <div class="pl-splash-sub" id="pl-splash-sub">Loading…</div>
+      <div class="pl-splash-title">
+        <span class="sr-only-splash">Partner Ledger</span><span aria-hidden="true" class="pl-letters"><span style="--d: 0">P</span><span style="--d: 1">a</span><span style="--d: 2">r</span><span style="--d: 3">t</span><span style="--d: 4">n</span><span style="--d: 5">e</span><span style="--d: 6">r</span><span style="--d: 7"> </span><span style="--d: 8">L</span><span style="--d: 9">e</span><span style="--d: 10">d</span><span style="--d: 11">g</span><span style="--d: 12">e</span><span style="--d: 13">r</span></span>
+      </div>
+      <div class="pl-splash-sub" id="pl-splash-sub">Loading<span class="pl-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -63,8 +63,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             onClick={() => dismiss(t.id)}
-            // The calculator's toast: a frosted pill with an accent-tinted edge.
-            className={`pointer-events-auto flex max-w-md cursor-pointer items-center gap-2.5 rounded-[22px] bg-surface/90 py-1.5 pl-2 text-[13px] font-medium text-ink-900 shadow-lift ring-1 ring-accent-500/35 backdrop-blur-xl backdrop-saturate-150 ${
+            // The calculator's toast: a frosted capsule with a glassy edge that springs in.
+            className={`pointer-events-auto flex max-w-md cursor-pointer items-center gap-2.5 rounded-[22px] border border-[color:var(--glass-edge)] bg-[color:var(--surface-translucent)] py-1.5 pl-2 text-[13px] font-medium text-ink-900 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.7)] backdrop-blur-[20px] backdrop-saturate-[1.8] ${
               t.actions.length ? 'pr-1.5' : 'pr-4'
             } ${t.leaving ? 'animate-drop-out' : 'animate-drop-in'}`}
           >
@@ -82,8 +82,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   dismiss(t.id)
                 }}
                 // The first action is the main one (Undo); any others are quieter.
-                className={`min-h-[36px] shrink-0 rounded-full px-3.5 text-[13px] font-semibold transition active:scale-95 ${
-                  i === 0 ? 'bg-accent-600 text-accent-ink hover:bg-accent-700' : 'bg-ink-50 text-ink-900 ring-1 ring-inset ring-line hover:bg-ink-100'
+                className={`min-h-[36px] shrink-0 rounded-full px-3.5 text-[13px] font-semibold tap ${
+                  i === 0 ? 'bg-accent-600 text-accent-ink hover:bg-accent-700' : 'bg-fill text-ink-900 hover:bg-fill-strong'
                 }`}
               >
                 {a.label}

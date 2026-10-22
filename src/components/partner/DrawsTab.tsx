@@ -120,7 +120,7 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
                     : `Month ${slot.period}, ${mon} ${yr}: move ${who}’s draw`
                 }
                 title={slot.locked ? 'Paid draws are locked' : 'Move this draw'}
-                className={`flex w-12 shrink-0 flex-col items-center self-start rounded-2xl py-1.5 text-center ring-1 ring-inset transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 disabled:active:scale-100 ${
+                className={`flex w-12 shrink-0 flex-col items-center self-start rounded-2xl py-1.5 text-center ring-1 ring-inset tap focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 ${
                   slot.done
                     ? 'bg-brand-50 text-brand-700 ring-brand-600/15'
                     : isNow
@@ -241,7 +241,7 @@ function ShareRow({
         </p>
       </div>
       {share.payout ? (
-        <IconButton label={`Void ${member.name}’s payout`} onClick={onVoid} className="hover:bg-rose-50 hover:text-rose-600">
+        <IconButton label={`Void ${member.name}’s payout`} onClick={onVoid} plain className="hover:bg-rose-50 hover:text-rose-600">
           <Icon name="undo" size={16} />
         </IconButton>
       ) : (
@@ -255,7 +255,7 @@ function ShareRow({
 
 function ReorderButtons({ who, up, down, disabled }: { who: string; up?: () => void; down?: () => void; disabled: boolean }) {
   const cls =
-    'flex h-6 w-7 items-center justify-center rounded-lg text-ink-400 transition hover:bg-ink-900/[0.05] hover:text-ink-800 active:scale-90 disabled:pointer-events-none disabled:opacity-20'
+    'flex h-6 w-7 items-center justify-center rounded-lg text-ink-400 tap hover:bg-fill hover:text-ink-800 disabled:pointer-events-none disabled:opacity-20'
   return (
     <>
       <button type="button" aria-label={`Move ${who} earlier`} title="Move earlier" onClick={up} disabled={!up || disabled} className={cls}>

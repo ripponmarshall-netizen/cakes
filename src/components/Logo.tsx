@@ -8,6 +8,8 @@ export function Logo({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden className="block shrink-0">
       <rect width="64" height="64" rx="14" fill="#0b0b0c" />
+      {/* A faint edge, so the tile still reads on the black dark-mode page. */}
+      <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="#fff" strokeOpacity="0.14" />
       <circle cx="32" cy="32" r="17" fill="none" stroke="#f4f4f5" strokeWidth="3.5" />
       <g stroke="#0b0b0c" strokeWidth="2.5">
         <circle cx="32" cy="15" r="5.5" fill="#e0a43c" />

@@ -29,7 +29,7 @@ export function ExportModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
             key={o.title}
             type="button"
             onClick={o.run}
-            className="group flex w-full items-center gap-3.5 rounded-2xl bg-ink-50 p-4 text-left ring-1 ring-inset ring-line transition duration-200 hover:ring-ink-300 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
+            className="group flex w-full items-center gap-3.5 rounded-2xl bg-ink-50 p-4 text-left ring-1 ring-inset ring-line tap tap-soft hover:ring-ink-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
           >
             <span className="hero flex h-11 w-11 shrink-0 items-center justify-center !rounded-2xl text-accent-600">
               <Icon name="file" size={18} />

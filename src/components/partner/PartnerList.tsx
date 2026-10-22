@@ -337,7 +337,7 @@ function PartnerCard({ row, index, onOpen }: { row: Row; index: number; onOpen: 
       type="button"
       onClick={onOpen}
       style={{ ['--i' as string]: index }}
-      className="card group relative flex flex-col p-[18px] text-left transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-float hover:ring-line active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
+      className="card group relative flex flex-col p-[18px] text-left tap tap-soft hover:shadow-float hover:ring-line focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
     >
       <div className="flex items-start justify-between gap-3">
         <h3 className="min-w-0 truncate text-base font-semibold tracking-[-0.005em] text-ink-900">{partner.name}</h3>

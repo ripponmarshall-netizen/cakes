@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { usePresence } from '../../hooks/usePresence'
-import { Icon } from './Icon'
+import { useSheetDrag } from '../../hooks/useSheetDrag'
 
 interface ModalProps {
   open: boolean
@@ -41,10 +41,24 @@ function trapFocus(e: KeyboardEvent, panel: HTMLElement | null) {
   }
 }
 
-/** Bottom sheet on phones, centred card on larger screens. Animates in and out. */
+/** The close mark (SF Symbols' xmark), drawn so it's crisp at any size. */
+function XMark({ size = 13 }: { size?: number }) {
+  return (
+    <svg aria-hidden width={size} height={size} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+      <path d="M2 2l10 10M12 2L2 12" />
+    </svg>
+  )
+}
+
+/**
+ * Bottom sheet on phones (slides up on a soft spring; pull it down by its top
+ * to close), centred card on larger screens (springs in). Animates out.
+ */
 export function Modal({ open, onClose, title, subtitle, children, footer }: ModalProps) {
   const { mounted, leaving } = usePresence(open)
   const panel = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
+  const backdrop = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const subtitleId = useId()
   // Callers pass inline closures; keep the latest without re-running the effect
@@ -89,14 +103,19 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
     }
   }, [open])
 
+  const flung = useSheetDrag(open && mounted, panel, body, backdrop, () => closeRef.current())
+
   if (!mounted) return null
 
   // Portalled to <body> so no transformed or blurred ancestor can trap it.
+  // A sheet that's been flung leaves on its own flight, and its backdrop fades
+  // from where the drag left it, so the usual exit keyframes stand aside.
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:items-center sm:p-6">
       <div
+        ref={backdrop}
         // No backdrop blur: re-blurring the whole screen on every frame of the fade makes sheets stutter on mid-range phones.
-        className={`absolute inset-0 bg-black/60 ${leaving ? 'animate-fade-out' : 'animate-[fade_0.18s_ease-out]'}`}
+        className={`absolute inset-0 bg-black/45 ${leaving ? (flung ? '' : 'animate-fade-out') : 'animate-[fade_0.18s_ease-out]'}`}
         onClick={() => !leaving && onClose()}
         aria-hidden
       />
@@ -107,26 +126,27 @@ export function Modal({ open, onClose, title, subtitle, children, footer }: Moda
         aria-labelledby={titleId}
         aria-describedby={subtitle ? subtitleId : undefined}
         tabIndex={-1}
-        // On phones a sheet that floats just above the bottom edge (so its spring has room); a centred card on larger screens.
-        className={`relative z-10 flex max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top))] w-full flex-col overflow-hidden rounded-4xl bg-surface shadow-lift outline-none ring-1 ring-line sm:max-h-[88dvh] sm:max-w-lg ${
-          leaving ? 'pointer-events-none animate-sheet-out sm:animate-pop-out' : 'animate-sheet-in sm:animate-pop-in'
+        // On phones a sheet that floats just above the bottom edge, rounder like an iOS sheet; a centred card on larger screens.
+        className={`relative z-10 flex max-h-full w-full flex-col overflow-hidden rounded-[28px] bg-surface shadow-lift outline-none ring-1 ring-[color:var(--card-edge)] sm:max-h-[88dvh] sm:max-w-lg sm:rounded-4xl ${
+          leaving ? `pointer-events-none ${flung ? '' : 'animate-sheet-out sm:animate-pop-out'}` : 'animate-sheet-in sm:animate-pop-in'
         }`}
       >
-        <div className="flex shrink-0 items-start justify-between gap-3 px-[18px] pb-3.5 pt-[18px] sm:px-6 sm:pt-6">
-          <div className="min-w-0">
+        <span className="grabber sm:hidden" aria-hidden />
+        <div className="flex shrink-0 items-start justify-between gap-3 px-[18px] pb-3.5 pt-3 sm:px-6 sm:pt-6">
+          <div className="min-w-0 pt-1.5">
             <h2 id={titleId} className="truncate text-lg font-semibold leading-tight text-ink-900">{title}</h2>
             {subtitle && <p id={subtitleId} className="num mt-1 text-[13px] text-ink-500">{subtitle}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ink-50 text-ink-700 ring-1 ring-inset ring-line transition hover:bg-ink-100 hover:text-ink-900 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
+            className="tap flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fill text-ink-500 hover:bg-fill-strong hover:text-ink-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
             aria-label="Close"
           >
-            <Icon name="x" size={17} />
+            <XMark />
           </button>
         </div>
-        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-[18px] sm:px-6 ${footer ? 'pb-4' : 'pb-5 sm:pb-6'}`}>
+        <div ref={body} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-[18px] sm:px-6 ${footer ? 'pb-4' : 'pb-5 sm:pb-6'}`}>
           {children}
         </div>
         {footer && (

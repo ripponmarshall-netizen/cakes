@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { initials } from '../lib/format'
 import { Logo } from './Logo'
@@ -25,6 +25,14 @@ export function Header({ onHome }: { onHome?: () => void }) {
   const name = profile?.display_name ?? session?.user.email ?? 'You'
   const ref = useRef<HTMLElement>(null)
   const [showBankers, setShowBankers] = useState(false)
+  // The hairline under the header only shows once the page has scrolled.
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   // Sticky bits further down (the partner tab bar) sit under the header. Its
   // height changes with the notch (safe area) and the offline banner, so it's
@@ -58,17 +66,22 @@ export function Header({ onHome }: { onHome?: () => void }) {
 
   return (
     // Fades in only (no movement): the loading screen measures where its logo
-    // and title land on this header while it's still hidden.
+    // and title land on this header while it's still hidden. Solid, not
+    // frosted glass, as in the calculator: it runs up under the status bar
+    // and Dynamic Island, where a backdrop blur smeared whatever scrolled
+    // beneath it.
     <header
       ref={ref}
-      className="pt-safe px-safe sticky top-0 z-30 animate-[fade_0.45s_ease-out_backwards] border-b border-line-soft bg-canvas/85 backdrop-blur-[20px] backdrop-saturate-150"
+      className={`pt-safe px-safe sticky top-0 z-30 animate-[fade_0.45s_ease-out_backwards] border-b bg-canvas transition-[border-color,box-shadow] duration-200 ${
+        scrolled ? 'border-line-soft shadow-[0_10px_24px_-22px_rgba(0,0,0,0.9)]' : 'border-transparent'
+      }`}
     >
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
         {onHome ? (
           <button
             type="button"
             onClick={onHome}
-            className="group -ml-2 flex items-center gap-1 rounded-xl py-1.5 pl-1 pr-3 text-sm font-semibold text-ink-700 transition hover:bg-ink-900/[0.05] hover:text-ink-900 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
+            className="group -ml-2 flex items-center gap-1 rounded-xl py-1.5 pl-1 pr-3 text-sm font-semibold text-ink-700 tap hover:bg-fill hover:text-ink-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70"
           >
             <Icon name="chevron-left" size={20} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
             Partners
@@ -85,7 +98,7 @@ export function Header({ onHome }: { onHome?: () => void }) {
           </div>
         )}
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {onHome && (
             <span data-splash-target="logo" className="mr-1 hidden sm:block">
               <Logo size={28} />
@@ -101,7 +114,7 @@ export function Header({ onHome }: { onHome?: () => void }) {
             onClick={() => setShowBankers(true)}
             aria-label={`Signed in as ${name} — bankers`}
             title={`Signed in as ${name} — tap to manage bankers`}
-            className="ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-accent-600 text-[11px] font-bold text-accent-ink ring-2 ring-canvas transition active:scale-90 focus:outline-none focus-visible:ring-accent-500/70"
+            className="tap mx-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-accent-600 text-[12px] font-bold text-accent-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           >
             {initials(name)}
           </button>

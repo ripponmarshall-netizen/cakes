@@ -87,7 +87,7 @@ function MemberCard({ m, startDate, rawPeriod, onOpen }: { m: MemberSummary; sta
     <button
       type="button"
       onClick={onOpen}
-      className={`card group w-full p-4 text-left transition duration-300 ease-out hover:ring-line active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:p-5 ${
+      className={`card group w-full p-4 text-left tap tap-soft hover:ring-line focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:p-5 ${
         m.risk === 'high' ? '!ring-rose-300/70' : ''
       }`}
     >

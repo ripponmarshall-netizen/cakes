@@ -53,7 +53,7 @@ export function VoidDialog({
           <Button variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="void-form" variant="danger" className="flex-1" loading={saving} disabled={!reason.trim()}>
+          <Button type="submit" form="void-form" variant="destructive" className="flex-1" loading={saving} disabled={!reason.trim()}>
             {confirmLabel}
           </Button>
         </div>

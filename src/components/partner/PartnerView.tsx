@@ -100,7 +100,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
             {status === 'upcoming' && <>Starts {formatDate(partner.start_date)}</>}
             {status === 'complete' && <>Cycle finished</>}
           </span>
-          <IconButton label="Partner settings" onClick={() => setEditing(true)} className="-mr-1.5 text-ink-700">
+          <IconButton label="Partner settings" onClick={() => setEditing(true)} className="-mr-1">
             <Icon name="settings" size={19} />
           </IconButton>
         </div>
@@ -171,7 +171,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
         <button
           type="button"
           onClick={() => setPanel('next')}
-          className="pressable flex w-full items-center gap-3 rounded-3xl bg-accent-50 p-4 text-left text-accent-900 ring-1 ring-inset ring-accent-500/25"
+          className="tap tap-soft flex w-full items-center gap-3 rounded-3xl bg-accent-50 p-4 text-left text-accent-900 ring-1 ring-inset ring-accent-500/25"
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-700">
             <Icon name="sparkle" size={18} />
@@ -189,7 +189,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
         <button
           type="button"
           onClick={() => openTab('members')}
-          className={`pressable flex w-full items-start gap-3 rounded-3xl p-4 text-left ring-1 ring-inset ${
+          className={`tap tap-soft flex w-full items-start gap-3 rounded-3xl p-4 text-left ring-1 ring-inset ${
             summary.atRisk > 0 ? 'bg-rose-50 text-rose-900 ring-rose-200/80' : 'bg-amber-50 text-amber-900 ring-amber-200/80'
           }`}
         >
@@ -256,7 +256,8 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
       )}
 
       {/* Tabs */}
-      <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 px-4 py-2.5 sm:-mx-6 sm:px-6">
+      {/* Pinned under the header; the page fades out above the capsule rather than showing sharp through the gap. */}
+      <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 bg-gradient-to-b from-canvas from-30% to-transparent px-4 py-2.5 sm:-mx-6 sm:px-6">
         <Segmented
           size="lg"
           label="Partner sections"
@@ -312,7 +313,7 @@ function ActionButton({ icon, label, badge, onClick }: { icon: IconName; label: 
       type="button"
       onClick={onClick}
       aria-label={badge ? `${label} (${badge} behind)` : undefined}
-      className="card group relative flex flex-col items-center justify-center gap-1 py-3 text-[12.5px] font-semibold text-ink-700 transition duration-200 hover:text-ink-900 hover:ring-line active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:flex-row sm:gap-2 sm:py-3.5 sm:text-[13px]"
+      className="card group relative flex flex-col items-center justify-center gap-1 py-3 text-[12.5px] font-semibold text-ink-700 tap hover:text-ink-900 hover:ring-line focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:flex-row sm:gap-2 sm:py-3.5 sm:text-[13px]"
     >
       <Icon name={icon} size={17} className="text-ink-400 transition group-hover:text-accent-600" />
       {label}
