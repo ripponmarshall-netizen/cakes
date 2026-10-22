@@ -44,7 +44,7 @@ export function MembersTab({ ctx }: { ctx: PartnerCtx }) {
         <ul className="stagger space-y-2.5">
           {summary.members.map((m, i) => (
             <li key={m.member.id} style={{ ['--i' as string]: i }}>
-              <MemberCard m={m} startDate={partner.start_date} rawPeriod={summary.rawPeriod} onOpen={() => setOpenId(m.member.id)} />
+              <MemberCard m={m} startDate={partner.start_date} rawPeriod={summary.rawPeriod} longCycle={partner.term_months > 12} onOpen={() => setOpenId(m.member.id)} />
             </li>
           ))}
         </ul>
@@ -81,7 +81,7 @@ export function MembersTab({ ctx }: { ctx: PartnerCtx }) {
   )
 }
 
-function MemberCard({ m, startDate, rawPeriod, onOpen }: { m: MemberSummary; startDate: string; rawPeriod: number; onOpen: () => void }) {
+function MemberCard({ m, startDate, rawPeriod, longCycle, onOpen }: { m: MemberSummary; startDate: string; rawPeriod: number; longCycle: boolean; onOpen: () => void }) {
   const paidShare = m.termTotal > 0 ? Math.min(1, m.paid / m.termTotal) : 0
   return (
     <button
@@ -132,7 +132,7 @@ function MemberCard({ m, startDate, rawPeriod, onOpen }: { m: MemberSummary; sta
                   s.payout ? 'text-brand-700' : s.period < rawPeriod ? 'text-rose-600' : 'text-ink-700'
                 }`}
               >
-                {periodLabel(startDate, s.period).replace(/ \d{4}$/, '')}
+                {periodLabel(startDate, s.period).replace(/ (\d{2})(\d{2})$/, longCycle ? ' ’$2' : '')}
                 {s.half && <span className="font-medium text-ink-400">½</span>}
                 {s.payout && <Icon name="check" size={11} />}
               </span>

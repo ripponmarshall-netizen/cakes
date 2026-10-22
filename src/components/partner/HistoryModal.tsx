@@ -97,7 +97,8 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
           fee_value: 'fee',
           notes: 'notes',
           share_schedule: 'statement sharing',
-          pay_details: 'how to pay'
+          pay_details: 'how to pay',
+          no_draw_months: 'no-draw months',
         }
         const changed = Object.keys(labels).filter((k) => JSON.stringify(o[k]) !== JSON.stringify(n[k]))
         if (JSON.stringify(o.draw_order) !== JSON.stringify(n.draw_order) && changed.length === 0) return { icon: 'shuffle', text: 'Changed the draw order' }

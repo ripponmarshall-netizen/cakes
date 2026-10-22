@@ -1,5 +1,5 @@
-import type { MemberSummary, PartnerSummary } from '../../lib/calc'
-import { formatDate, formatHands, formatMoney, methodLabels, periodLabel } from '../../lib/format'
+import { noDrawMonths, type MemberSummary, type PartnerSummary } from '../../lib/calc'
+import { formatDate, formatHands, formatMoney, methodLabels, monthsLabel, periodLabel } from '../../lib/format'
 import type { Contribution, Partner } from '../../lib/types'
 
 /**
@@ -22,6 +22,7 @@ export function StatementView({
   showSchedule: boolean
 }) {
   const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const noDraw = noDrawMonths(partner)
   const sorted = [...payments].sort((a, b) => a.paid_on.localeCompare(b.paid_on) || a.created_at.localeCompare(b.created_at))
 
   return (
@@ -32,6 +33,7 @@ export function StatementView({
         <p className="num mt-1 text-sm text-ink-500">
           {formatHands(m.hands)} · {formatMoney(m.monthlyDue)} a month · {partner.term_months} months from {formatDate(partner.start_date)}
         </p>
+        {noDraw.length > 0 && <p className="mt-0.5 text-xs text-ink-500">No draw in {monthsLabel(noDraw).toLowerCase()} — everyone still pays</p>}
         <p className="mt-0.5 text-xs text-ink-400">Statement as of {today}</p>
       </div>
 

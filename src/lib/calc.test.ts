@@ -7,7 +7,9 @@ import {
   effectiveDrawOrder,
   moveSlot,
   partnerTerms,
+  noDrawMonths,
   periodRows,
+  projectedShortfall,
   rawCurrentPeriod,
   scheduleOrder,
   serializeSpec,
@@ -25,6 +27,7 @@ const partner = (over: Partial<Partner> = {}): Partner => ({
   fee_type: 'flat',
   fee_value: 2000,
   draw_order: [],
+  no_draw_months: [],
   share_schedule: false,
   pay_details: null,
   notes: null,
@@ -388,5 +391,49 @@ describe('voids, replacements and risk', () => {
     const s = summarizePartner(p, members, [], [payout('a', 1, 40000, 2000)], new Date(2026, 2, 10))
     // Month 2 (Feb 15) is overdue, month 3 starts Mar 15 — within 7 days of Mar 10.
     expect(drawsDueSoon(p, s, new Date(2026, 2, 10)).map((d) => d.memberId)).toEqual(['b', 'c'])
+  })
+})
+
+describe('no-draw months', () => {
+  const four = [member('a', 1, 1), member('b', 1, 2), member('c', 1, 3), member('d', 1, 4)]
+
+  it('skips the marked months and keeps each draw at hand × length', () => {
+    const p = partner({ term_months: 5, no_draw_months: [1] })
+    const sched = buildSchedule(p, four, [])
+    expect(sched.map((s) => s.period)).toEqual([2, 3, 4, 5])
+    expect(sched[0].shares[0].gross).toBe(50000)
+    expect(projectedShortfall(p, four)).toBeNull()
+  })
+
+  it('changes nothing when no months are marked', () => {
+    const p = partner({ term_months: 5 })
+    expect(buildSchedule(p, four, []).map((s) => s.period)).toEqual([2, 3, 4, 5])
+  })
+
+  it('doubles up late when there are fewer draw months than draws', () => {
+    const p = partner({ term_months: 4, no_draw_months: [2] })
+    expect(buildSchedule(p, four, []).map((s) => s.period)).toEqual([1, 3, 4, 4])
+    expect(projectedShortfall(p, four)).toBeNull()
+  })
+
+  it('warns when an early draw is more than the pot holds', () => {
+    // 4 hands over 5 months, gap at the end: month 1 pays out 5 hands with 4 collected.
+    const p = partner({ term_months: 5, no_draw_months: [5] })
+    expect(buildSchedule(p, four, []).map((s) => s.period)).toEqual([1, 2, 3, 4])
+    expect(projectedShortfall(p, four)).toEqual({ period: 1, short: 40000 })
+  })
+
+  it('cleans up the stored list', () => {
+    expect(noDrawMonths({ term_months: 4, no_draw_months: [3, 9, 3, 0, 1] })).toEqual([1, 3])
+    expect(noDrawMonths({ term_months: 2, no_draw_months: [1, 2] })).toEqual([])
+    expect(noDrawMonths({ term_months: 2 })).toEqual([])
+  })
+
+  it('counts the whole cycle for what each member pays and gets', () => {
+    const p = partner({ term_months: 5, no_draw_months: [3] })
+    const s = summarizePartner(p, four, [], [], new Date(2026, 0, 20))
+    expect(s.cycleTotal).toBe(200000)
+    expect(s.feesProjected).toBe(8000)
+    expect(s.members[0].entitlementGross).toBe(50000)
   })
 })

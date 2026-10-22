@@ -289,6 +289,8 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
         onClose={() => setEditing(false)}
         partner={partner}
         totalHands={summary.totalHands}
+        members={members}
+        schedule={summary.schedule}
         hasActivity={contributions.length + payouts.length > 0}
         onSaved={refresh}
         onDeleted={onGone}

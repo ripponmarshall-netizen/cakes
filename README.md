@@ -19,6 +19,11 @@ members don't need accounts.
 - Each hand pays **hand × length** over the cycle and draws once.
 - A draw is worth **hand × length** (gross). The member receives that **minus the fee**.
 - A member with 2 hands pays double each month and draws twice.
+- **Months with no draw** (partner settings): everyone still pays, nobody
+  draws, and the draws are spread over the other months. A draw stays
+  **hand × length**, so put the gap early (month 1 is the usual one): a gap
+  late in the cycle means early draws are bigger than the pot. The app warns
+  when that happens.
 - A **half hand** pays half and gets half a draw. Two half hands share one draw
   slot (same month, each gets half, each pays half the fee). Hands go in steps
   of ½: ½, 1, 1½, 2…
@@ -100,6 +105,8 @@ Run the migrations in order in the Supabase SQL editor (or `supabase db push`):
    payouts (`record_payout`), cash counts, the reminder log, starting the next
    round, managing bankers in the app, and payment details on statements.
    Safe to re-run.
+4. [`20261022000000_ledger_v4.sql`](supabase/migrations/20261022000000_ledger_v4.sql) — months with
+   no draw (also on statement links and copied to the next round). Safe to re-run.
 
 > **Run each migration before deploying the app version that needs it.**
 > The app from v3 on records draws through `record_payout`; on a database

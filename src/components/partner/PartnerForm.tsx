@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
-import { partnerTerms } from '../../lib/calc'
-import { formatHands, formatMoney, plural, todayIso } from '../../lib/format'
-import type { FeeType, Partner } from '../../lib/types'
+import { noDrawMonths, partnerTerms, projectedShortfall, type DrawSlot } from '../../lib/calc'
+import { formatHands, formatMoney, periodLabel, plural, todayIso } from '../../lib/format'
+import type { FeeType, Member, Partner } from '../../lib/types'
 import { useToast } from '../ui/Toast'
 import { useConfirm } from '../ui/Confirm'
 import { Modal } from '../ui/Modal'
@@ -16,6 +16,10 @@ interface Props {
   /** Edit mode when given. */
   partner?: Partner
   totalHands?: number
+  /** Edit mode: for the no-draw preview (does the pot cover every draw?). */
+  members?: Member[]
+  /** Edit mode: months holding a paid draw can't become no-draw months. */
+  schedule?: DrawSlot[]
   hasActivity?: boolean
   onCreated?: (id: string) => void
   onSaved?: () => void
@@ -24,7 +28,7 @@ interface Props {
   onNextRound?: () => void
 }
 
-export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivity = false, onCreated, onSaved, onDeleted, onNextRound }: Props) {
+export function PartnerForm({ open, onClose, partner, totalHands = 0, members = [], schedule = [], hasActivity = false, onCreated, onSaved, onDeleted, onNextRound }: Props) {
   const { toast } = useToast()
   const confirm = useConfirm()
   const [name, setName] = useState('')
@@ -36,6 +40,8 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
   const [notes, setNotes] = useState('')
   const [payDetails, setPayDetails] = useState('')
   const [shareSchedule, setShareSchedule] = useState(false)
+  const [noDraw, setNoDraw] = useState<number[]>([])
+  const [pickingMonths, setPickingMonths] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -49,6 +55,9 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
     setNotes(partner?.notes ?? '')
     setPayDetails(partner?.pay_details ?? '')
     setShareSchedule(partner?.share_schedule ?? false)
+    const saved = partner ? noDrawMonths(partner) : []
+    setNoDraw(saved)
+    setPickingMonths(saved.length > 0)
     // Reset only when opening (or switching partner): a live update to the
     // partner mustn't wipe what's being typed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,6 +68,18 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
   const feeN = Number(fee) || 0
   const valid = name.trim() && handN > 0 && termN >= 1 && termN <= 120 && feeN >= 0 && (feeType === 'flat' || feeN <= 100)
   const preview = partnerTerms({ hand_amount: handN, term_months: termN || 1, fee_type: feeType, fee_value: feeN })
+  // Months past a shortened length drop out; at least one month has to draw.
+  const skips = noDrawMonths({ term_months: termN, no_draw_months: noDraw })
+  const paidMonths = new Set(schedule.filter((s) => s.locked).map((s) => s.period))
+  const shortfall =
+    partner && members.length > 0 && handN > 0 && termN >= 1 && termN <= 120
+      ? projectedShortfall({ ...partner, hand_amount: handN, term_months: termN, no_draw_months: skips }, members)
+      : null
+  const draws = schedule.length
+
+  function toggleMonth(m: number) {
+    setNoDraw((xs) => (xs.includes(m) ? xs.filter((x) => x !== m) : [...xs, m].sort((a, b) => a - b)))
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -74,6 +95,8 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
       notes: notes.trim() || null,
       pay_details: payDetails.trim() || null,
       share_schedule: shareSchedule,
+      // Sent only when it's in use, so a database without the v4 migration can still save settings.
+      ...(skips.length > 0 || (partner && noDrawMonths(partner).length > 0) ? { no_draw_months: skips } : {}),
     }
     if (partner) {
       const { error } = await supabase.from('partners').update(values).eq('id', partner.id)
@@ -141,12 +164,12 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
           </Field>
         </div>
 
-        {totalHands > 0 && termN !== Math.ceil(totalHands) && (
+        {totalHands > 0 && termN !== Math.ceil(totalHands) && skips.length === 0 && (
           <div className="flex items-start gap-2.5 rounded-2xl bg-sky-50 px-3.5 py-3 text-xs leading-relaxed text-sky-900 ring-1 ring-inset ring-sky-200/60">
             <Icon name="info" size={16} className="mt-px shrink-0" />
             <span className="flex-1">
               {formatHands(totalHands)} over {plural(termN, 'month')} — draws will be spread out so the pot always covers
-              them.{' '}
+              them{termN > totalHands ? ', or pick the months with no draw below' : ''}.{' '}
               <button type="button" className="font-bold underline underline-offset-2" onClick={() => setTerm(String(Math.ceil(totalHands)))}>
                 Match hands ({Math.ceil(totalHands)})
               </button>
@@ -191,6 +214,76 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, hasActivit
             <Row label="Banker fee per draw" value={`− ${formatMoney(preview.feePerDraw)}`} />
             <div className="my-2 border-t border-dashed border-accent-500/30" />
             <Row label="Member receives per hand" value={formatMoney(preview.netPerDraw)} strong />
+          </div>
+        )}
+
+        {termN >= 2 && termN <= 120 && (
+          <div className="rounded-2xl bg-ink-50/60 p-3.5 ring-1 ring-inset ring-line-soft">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink-900">Months with no draw</p>
+                <p className="text-xs leading-relaxed text-ink-500">
+                  {skips.length === 0
+                    ? 'Everyone still pays; nobody draws that month.'
+                    : `${plural(skips.length, 'month')} · ${draws ? `${plural(draws, 'draw')} over ${plural(termN - skips.length, 'month')}` : 'everyone still pays'}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPickingMonths((v) => !v)}
+                aria-expanded={pickingMonths}
+                className="shrink-0 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-accent-700 transition hover:bg-accent-500/10"
+              >
+                {pickingMonths ? 'Done' : skips.length ? 'Change' : 'Choose'}
+              </button>
+            </div>
+            {pickingMonths && (
+              <div className="animate-fade mt-3">
+                <div role="group" aria-label="Months with no draw" className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
+                  {Array.from({ length: termN }, (_, i) => i + 1).map((m) => {
+                    const on = skips.includes(m)
+                    const paid = !on && paidMonths.has(m)
+                    const last = !on && skips.length >= termN - 1
+                    const [mon, yr] = start ? periodLabel(start, m).split(' ') : ['', '']
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => toggleMonth(m)}
+                        disabled={paid || last}
+                        aria-pressed={on}
+                        aria-label={`Month ${m}${mon ? `, ${mon} ${yr}` : ''}${paid ? ': a draw is already paid' : on ? ': no draw' : ''}`}
+                        title={paid ? 'A draw is already paid this month' : undefined}
+                        className={`flex flex-col items-center rounded-xl py-1.5 ring-1 ring-inset transition disabled:opacity-40 ${
+                          on ? 'bg-ink-900 text-canvas ring-ink-900' : 'bg-surface text-ink-700 ring-line hover:ring-ink-300'
+                        }`}
+                      >
+                        <span className="mono text-sm font-semibold leading-tight">{m}</span>
+                        {mon && (
+                          <span className="whitespace-nowrap text-[10px] font-medium opacity-70">
+                            {mon} ’{yr.slice(-2)}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="mt-2.5 text-xs leading-relaxed text-ink-500">
+                  Each draw stays {formatMoney(preview.grossPerDraw)} (the hand × {termN}). The draws move to the other months
+                  {draws > termN - skips.length ? ', some sharing a month' : ''}.
+                </p>
+              </div>
+            )}
+            {shortfall && (
+              <p className="mt-3 flex items-start gap-2.5 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
+                <Icon name="alert" size={15} className="mt-px shrink-0" />
+                <span>
+                  Even with everyone paid up, the pot is short for the month {shortfall.period} draw (up to{' '}
+                  <strong className="num">{formatMoney(shortfall.short)}</strong>). Put a no-draw month earlier — month 1 is the
+                  usual one — or plan to front the difference.
+                </span>
+              </p>
+            )}
           </div>
         )}
 
