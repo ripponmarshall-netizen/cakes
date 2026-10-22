@@ -47,7 +47,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <Button variant="secondary" className="flex-1" onClick={() => close(false)} autoFocus={!!shown?.danger}>
               Cancel
             </Button>
-            <Button variant={shown?.danger ? 'danger' : 'primary'} className="flex-1" onClick={() => close(true)} autoFocus={!shown?.danger}>
+            <Button variant={shown?.danger ? 'destructive' : 'primary'} className="flex-1" onClick={() => close(true)} autoFocus={!shown?.danger}>
               {shown?.confirmLabel ?? 'Confirm'}
             </Button>
           </div>

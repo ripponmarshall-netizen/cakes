@@ -11,7 +11,7 @@ const media = () => window.matchMedia('(prefers-color-scheme: dark)')
 function apply(pref: ThemePref) {
   const dark = pref === 'dark' || (pref === 'system' && media().matches)
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#161513' : '#faf9f7')
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#000000' : '#f2f2f7')
 }
 
 /** Light, dark, or follow the phone. Remembered on this device. */
