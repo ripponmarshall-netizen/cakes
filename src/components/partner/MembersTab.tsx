@@ -41,7 +41,7 @@ export function MembersTab({ ctx }: { ctx: PartnerCtx }) {
           Add everyone throwing a hand. Someone with two hands draws twice and pays twice each month; two half hands share a draw.
         </EmptyState>
       ) : (
-        <ul className="stagger space-y-2.5">
+        <ul className="stagger space-y-2.5 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
           {summary.members.map((m, i) => (
             <li key={m.member.id} style={{ ['--i' as string]: i }}>
               <MemberCard m={m} startDate={partner.start_date} rawPeriod={summary.rawPeriod} longCycle={partner.term_months > 12} onOpen={() => setOpenId(m.member.id)} />
@@ -87,7 +87,7 @@ function MemberCard({ m, startDate, rawPeriod, longCycle, onOpen }: { m: MemberS
     <button
       type="button"
       onClick={onOpen}
-      className={`card group w-full p-4 text-left tap tap-soft hover:ring-line focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:p-5 ${
+      className={`card group h-full w-full p-4 text-left tap tap-soft hover:ring-line focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 sm:p-5 ${
         m.risk === 'high' ? '!ring-rose-300/70' : ''
       }`}
     >

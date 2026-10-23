@@ -22,6 +22,8 @@ const PAGE = 1000
  */
 export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' }: Options = {}) {
   const [rows, setRows] = useState<T[]>([])
+  // When the shown rows were requested (0 for the device's saved copy), so writes saved since still show over them.
+  const [asOf, setAsOf] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const column = filter?.column
@@ -33,6 +35,7 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
   const load = useCallback(async () => {
     if (skip) return
     const id = ++requestId.current
+    const startedAt = Date.now()
     const all: T[] = []
     let failure: string | null = null
     for (let from = 0; ; from += PAGE) {
@@ -59,6 +62,7 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
     } else {
       setError(null)
       setRows(all)
+      setAsOf(startedAt)
       writeCache(cacheKey, all)
     }
     setLoading(false)
@@ -79,6 +83,7 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
     }
     const cached = readCache<T[]>(cacheKey)
     if (cached) setRows(cached)
+    setAsOf(0)
     setLoading(!cached)
     load()
     window.addEventListener('online', loadSoon)
@@ -103,8 +108,8 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
 
   const queue = useSyncExternalStore(outbox.subscribe, outbox.snapshot)
   const merged = useMemo(
-    () => (skip ? rows : mergeRows(table, (r) => !column || !value || String(r[column]) === value, rows, queue)),
-    [rows, queue, table, column, value, skip],
+    () => (skip ? rows : mergeRows(table, (r) => !column || !value || String(r[column]) === value, rows, queue, asOf)),
+    [rows, queue, table, column, value, skip, asOf],
   )
 
   return { rows: merged, loading, error, reload: load }

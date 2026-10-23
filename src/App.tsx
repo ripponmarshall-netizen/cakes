@@ -50,7 +50,7 @@ export default function App() {
     <div className="min-h-screen pb-24">
       <Header onHome={isPartner ? () => navigate({ name: 'home' }) : undefined} />
       <main className="px-safe">
-        <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8 lg:max-w-6xl">
           {/* Keyed so each page's cards rise in again when you move between them. */}
           <div key={isPartner ? route.id : 'home'}>
             {isPartner ? (

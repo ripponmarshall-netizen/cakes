@@ -334,6 +334,11 @@
   .view > :nth-child(n + 4) {
     animation-delay: calc(var(--rise-step, 0.05s) * 3);
   }
+  /* Two columns on an iPad in landscape: each column is a .view of its own,
+     so its cards rise one by one rather than the whole column at once. */
+  .view > .view-split {
+    animation: none;
+  }
   .scrollbar-none {
     scrollbar-width: none;
   }

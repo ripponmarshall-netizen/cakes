@@ -82,207 +82,212 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
   }
 
   return (
-    <div className="view space-y-4">
-      {/* Hero */}
-      <section className="hero p-5 sm:p-6">
-        <span key={toCents(summary.pot)} className="sheen" aria-hidden />
-        <div className="relative flex items-center justify-between gap-3">
-          <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium text-accent-600">
-            {status === 'active' && (
-              <>
-                <span className="relative flex h-1.5 w-1.5 shrink-0">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-500 opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-600" />
-                </span>
-                Month {period} of {partner.term_months} · {periodLabel(partner.start_date, period)}
-              </>
-            )}
-            {status === 'upcoming' && <>Starts {formatDate(partner.start_date)}</>}
-            {status === 'complete' && <>Cycle finished</>}
-          </span>
-          <IconButton label="Partner settings" onClick={() => setEditing(true)} className="-mr-1">
-            <Icon name="settings" size={19} />
-          </IconButton>
-        </div>
-
-        <div className="relative mt-4">
-          <h1 className="font-display text-[1.5rem] font-semibold leading-tight text-ink-900 sm:text-[1.75rem]">{partner.name}</h1>
-          <p className="num mt-1 text-[13px] text-ink-500">
-            {formatMoney(terms.hand)} a hand · {formatHands(summary.totalHands)} · {partner.term_months} months
-          </p>
-        </div>
-
-        <div className="relative mt-5">
-          <p className="text-[13px] font-medium text-ink-500">In the pot now</p>
-          {/* Scales down on narrow phones, so a seven-figure pot stays inside the card. */}
-          <AnimatedMoney value={summary.pot} from={0} duration={900} className="mt-1 block text-[clamp(28px,9vw,40px)] font-bold leading-none text-ink-900" />
-          <p className="num mt-2.5 text-[13px] text-ink-500">
-            {summary.pot < 0 ? (
-              <span className="inline-flex items-start gap-1.5 font-semibold text-rose-600">
-                <Icon name="alert" size={14} className="mt-0.5 shrink-0" /> More has gone out than came in — check for a missing
-                payment or a draw paid early
-              </span>
-            ) : summary.behind > 0 ? (
-              <>
-                Should be <span className="font-semibold text-ink-900">{formatMoney(summary.potIfPaidUp)}</span> · {formatMoney(summary.behind)} still owed
-              </>
-            ) : status === 'upcoming' ? (
-              <>Nothing due yet</>
-            ) : (
-              <span className="inline-flex items-center gap-1.5">
-                <Icon name="check" size={14} className="text-brand-600" /> Everyone is paid up
-              </span>
-            )}
-          </p>
-        </div>
-
-        <div className="relative mt-5 h-1 overflow-hidden rounded-full bg-accent-500/15" aria-hidden>
-          <div className="h-full origin-left animate-grow-x rounded-full bg-accent-600 transition-[width] duration-1000 ease-out" style={{ width: `${progress * 100}%` }} />
-        </div>
-
-        <div className="relative mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-          <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)}`} subShort={`of ${formatMoneyShort(summary.dueToDate)}`} />
-          <HeroStat label="Paid out" value={summary.paidOutNet} sub={`${drawsDone} of ${summary.schedule.length} draws`} subShort={`${drawsDone}/${summary.schedule.length} draws`} />
-          <HeroStat label="Fees" value={summary.feesEarned} sub={`of ${formatMoney(summary.feesProjected)}`} subShort={`of ${formatMoneyShort(summary.feesProjected)}`} />
-        </div>
-      </section>
-
-      {/* Actions */}
-      <div className="grid grid-cols-4 gap-2">
-        <ActionButton icon="message" label="Remind" badge={behindCount || undefined} onClick={() => setPanel('remind')} />
-        <ActionButton icon="coins" label="Count" onClick={() => setPanel('count')} />
-        <ActionButton icon="download" label="Export" onClick={() => setPanel('export')} />
-        <ActionButton icon="clock" label="History" onClick={() => setPanel('history')} />
-      </div>
-      {lastCount && (
-        <p className="-mt-2 px-1 text-xs text-ink-500">
-          Cash last counted {timeAgo(lastCount.created_at)}:{' '}
-          {lastGap === 0 ? (
-            <span className="font-semibold text-brand-700">matched</span>
-          ) : (
-            <span className={`mono font-semibold ${lastGap < 0 ? 'text-rose-600' : 'text-sky-700'}`}>
-              {formatMoney(Math.abs(lastGap))} {lastGap < 0 ? 'short' : 'over'}
+    // On an iPad in landscape: the partner's summary on the left, the tabs beside it.
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-6 lg:space-y-0">
+      <div className="view space-y-4">
+        {/* Hero */}
+        <section className="hero p-5 sm:p-6">
+          <span key={toCents(summary.pot)} className="sheen" aria-hidden />
+          <div className="relative flex items-center justify-between gap-3">
+            <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium text-accent-600">
+              {status === 'active' && (
+                <>
+                  <span className="relative flex h-1.5 w-1.5 shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-500 opacity-60" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-600" />
+                  </span>
+                  Month {period} of {partner.term_months} · {periodLabel(partner.start_date, period)}
+                </>
+              )}
+              {status === 'upcoming' && <>Starts {formatDate(partner.start_date)}</>}
+              {status === 'complete' && <>Cycle finished</>}
             </span>
-          )}
-        </p>
-      )}
-
-      {nearEnd && (
-        <button
-          type="button"
-          onClick={() => setPanel('next')}
-          className="tap tap-soft flex w-full items-center gap-3 rounded-3xl bg-accent-50 p-4 text-left text-accent-900 ring-1 ring-inset ring-accent-500/25"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-700">
-            <Icon name="sparkle" size={18} />
-          </span>
-          <span className="min-w-0 flex-1 text-sm leading-relaxed">
-            <strong>{status === 'complete' ? 'This round is finished.' : 'Last month of this round.'}</strong> Start the next one with the same
-            members and settings.
-          </span>
-          <Icon name="chevron-right" size={18} className="shrink-0 opacity-50" />
-        </button>
-      )}
-
-      {/* Money at risk: members who have drawn more than they've paid in. */}
-      {summary.exposure > 0 && (
-        <button
-          type="button"
-          onClick={() => openTab('members')}
-          className={`tap tap-soft flex w-full items-start gap-3 rounded-3xl p-4 text-left ring-1 ring-inset ${
-            summary.atRisk > 0 ? 'bg-rose-50 text-rose-900 ring-rose-200/80' : 'bg-amber-50 text-amber-900 ring-amber-200/80'
-          }`}
-        >
-          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${summary.atRisk > 0 ? 'bg-rose-100' : 'bg-amber-100'}`}>
-            <Icon name="shield" size={18} />
-          </span>
-          <span className="min-w-0 flex-1 text-sm leading-relaxed">
-            <strong className="num">{formatMoney(summary.exposure)} at risk</strong> — members who already drew still owe that much.
-            {summary.atRisk > 0 && (
-              <>
-                {' '}
-                <strong>{summary.atRisk}</strong> of them {summary.atRisk === 1 ? 'is' : 'are'} behind right now.
-              </>
-            )}
-          </span>
-          <Icon name="chevron-right" size={18} className="mt-2 shrink-0 opacity-50" />
-        </button>
-      )}
-
-      {/* Next draw */}
-      {next && nextShares.length > 0 && (
-        <section className="card relative overflow-hidden p-[18px]">
-          <div className="absolute inset-y-0 left-0 w-1 bg-accent-600" aria-hidden />
-          <div className="flex items-center justify-between gap-3">
-            <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink-900">
-              <Icon name="gift" size={15} className="text-accent-600" /> Next draw
-            </p>
-            <span className="text-xs font-semibold text-ink-500">
-              {periodLabel(partner.start_date, next.period)}
-              {next.period < summary.rawPeriod && <span className="text-rose-600"> · overdue</span>}
-              {next.half && next.shares.length > 1 && <span> · shared</span>}
-            </span>
+            <IconButton label="Partner settings" onClick={() => setEditing(true)} className="-mr-1">
+              <Icon name="settings" size={19} />
+            </IconButton>
           </div>
-          <ul className="mt-3 space-y-3">
-            {nextShares.map((share) => {
-              const m = summary.members.find((x) => x.member.id === share.memberId)
-              if (!m) return null
-              return (
-                <li key={share.memberId} className="flex items-center gap-3">
-                  <Avatar name={m.member.name} id={m.member.id} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14.5px] font-semibold text-ink-900">
-                      {m.member.name}
-                      {share.half ? (
-                        <span className="font-medium text-ink-400"> · ½ hand</span>
-                      ) : (
-                        m.hands > 1 && <span className="font-medium text-ink-400"> · hand {share.handNo}</span>
-                      )}
-                    </p>
-                    <p className="num text-[13px] text-ink-500">
-                      gets <strong className="text-brand-700">{formatMoney(share.net)}</strong>
-                      {share.fee > 0 && <> after {formatMoney(share.fee)} fee</>}
-                      {m.behind > 0 && <span className="font-semibold text-rose-600"> · owes {formatMoney(m.behind)}</span>}
-                    </p>
-                  </div>
-                  <Button variant="accent" size="sm" onClick={() => setPaying(share)}>
-                    Pay out
-                  </Button>
-                </li>
-              )
-            })}
-          </ul>
-        </section>
-      )}
 
-      {/* Tabs */}
-      {/* Pinned under the header; the page fades out above the capsule rather than showing sharp through the gap. */}
-      <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 bg-gradient-to-b from-canvas from-30% to-transparent px-4 py-2.5 sm:-mx-6 sm:px-6">
-        <Segmented
-          size="lg"
-          label="Partner sections"
-          value={activeTab}
-          onChange={openTab}
-          options={[
-            { value: 'payments', label: 'Payments', icon: 'wallet' },
-            { value: 'draws', label: 'Draws', icon: 'gift' },
-            { value: 'members', label: 'Members', icon: 'users' },
-          ]}
-        />
+          <div className="relative mt-4">
+            <h1 className="font-display text-[1.5rem] font-semibold leading-tight text-ink-900 sm:text-[1.75rem]">{partner.name}</h1>
+            <p className="num mt-1 text-[13px] text-ink-500">
+              {formatMoney(terms.hand)} a hand · {formatHands(summary.totalHands)} · {partner.term_months} months
+            </p>
+          </div>
+
+          <div className="relative mt-5">
+            <p className="text-[13px] font-medium text-ink-500">In the pot now</p>
+            {/* Scales down on narrow phones, so a seven-figure pot stays inside the card. */}
+            <AnimatedMoney value={summary.pot} from={0} duration={900} className="mt-1 block text-[clamp(28px,9vw,40px)] font-bold leading-none text-ink-900" />
+            <p className="num mt-2.5 text-[13px] text-ink-500">
+              {summary.pot < 0 ? (
+                <span className="inline-flex items-start gap-1.5 font-semibold text-rose-600">
+                  <Icon name="alert" size={14} className="mt-0.5 shrink-0" /> More has gone out than came in — check for a missing
+                  payment or a draw paid early
+                </span>
+              ) : summary.behind > 0 ? (
+                <>
+                  Should be <span className="font-semibold text-ink-900">{formatMoney(summary.potIfPaidUp)}</span> · {formatMoney(summary.behind)} still owed
+                </>
+              ) : status === 'upcoming' ? (
+                <>Nothing due yet</>
+              ) : (
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="check" size={14} className="text-brand-600" /> Everyone is paid up
+                </span>
+              )}
+            </p>
+          </div>
+
+          <div className="relative mt-5 h-1 overflow-hidden rounded-full bg-accent-500/15" aria-hidden>
+            <div className="h-full origin-left animate-grow-x rounded-full bg-accent-600 transition-[width] duration-1000 ease-out" style={{ width: `${progress * 100}%` }} />
+          </div>
+
+          <div className="relative mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+            <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)}`} subShort={`of ${formatMoneyShort(summary.dueToDate)}`} />
+            <HeroStat label="Paid out" value={summary.paidOutNet} sub={`${drawsDone} of ${summary.schedule.length} draws`} subShort={`${drawsDone}/${summary.schedule.length} draws`} />
+            <HeroStat label="Fees" value={summary.feesEarned} sub={`of ${formatMoney(summary.feesProjected)}`} subShort={`of ${formatMoneyShort(summary.feesProjected)}`} />
+          </div>
+        </section>
+
+        {/* Actions */}
+        <div className="grid grid-cols-4 gap-2">
+          <ActionButton icon="message" label="Remind" badge={behindCount || undefined} onClick={() => setPanel('remind')} />
+          <ActionButton icon="coins" label="Count" onClick={() => setPanel('count')} />
+          <ActionButton icon="download" label="Export" onClick={() => setPanel('export')} />
+          <ActionButton icon="clock" label="History" onClick={() => setPanel('history')} />
+        </div>
+        {lastCount && (
+          <p className="-mt-2 px-1 text-xs text-ink-500">
+            Cash last counted {timeAgo(lastCount.created_at)}:{' '}
+            {lastGap === 0 ? (
+              <span className="font-semibold text-brand-700">matched</span>
+            ) : (
+              <span className={`mono font-semibold ${lastGap < 0 ? 'text-rose-600' : 'text-sky-700'}`}>
+                {formatMoney(Math.abs(lastGap))} {lastGap < 0 ? 'short' : 'over'}
+              </span>
+            )}
+          </p>
+        )}
+
+        {nearEnd && (
+          <button
+            type="button"
+            onClick={() => setPanel('next')}
+            className="tap tap-soft flex w-full items-center gap-3 rounded-3xl bg-accent-50 p-4 text-left text-accent-900 ring-1 ring-inset ring-accent-500/25"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-700">
+              <Icon name="sparkle" size={18} />
+            </span>
+            <span className="min-w-0 flex-1 text-sm leading-relaxed">
+              <strong>{status === 'complete' ? 'This round is finished.' : 'Last month of this round.'}</strong> Start the next one with the same
+              members and settings.
+            </span>
+            <Icon name="chevron-right" size={18} className="shrink-0 opacity-50" />
+          </button>
+        )}
+
+        {/* Money at risk: members who have drawn more than they've paid in. */}
+        {summary.exposure > 0 && (
+          <button
+            type="button"
+            onClick={() => openTab('members')}
+            className={`tap tap-soft flex w-full items-start gap-3 rounded-3xl p-4 text-left ring-1 ring-inset ${
+              summary.atRisk > 0 ? 'bg-rose-50 text-rose-900 ring-rose-200/80' : 'bg-amber-50 text-amber-900 ring-amber-200/80'
+            }`}
+          >
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${summary.atRisk > 0 ? 'bg-rose-100' : 'bg-amber-100'}`}>
+              <Icon name="shield" size={18} />
+            </span>
+            <span className="min-w-0 flex-1 text-sm leading-relaxed">
+              <strong className="num">{formatMoney(summary.exposure)} at risk</strong> — members who already drew still owe that much.
+              {summary.atRisk > 0 && (
+                <>
+                  {' '}
+                  <strong>{summary.atRisk}</strong> of them {summary.atRisk === 1 ? 'is' : 'are'} behind right now.
+                </>
+              )}
+            </span>
+            <Icon name="chevron-right" size={18} className="mt-2 shrink-0 opacity-50" />
+          </button>
+        )}
+
+        {/* Next draw */}
+        {next && nextShares.length > 0 && (
+          <section className="card relative overflow-hidden p-[18px]">
+            <div className="absolute inset-y-0 left-0 w-1 bg-accent-600" aria-hidden />
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink-900">
+                <Icon name="gift" size={15} className="text-accent-600" /> Next draw
+              </p>
+              <span className="text-xs font-semibold text-ink-500">
+                {periodLabel(partner.start_date, next.period)}
+                {next.period < summary.rawPeriod && <span className="text-rose-600"> · overdue</span>}
+                {next.half && next.shares.length > 1 && <span> · shared</span>}
+              </span>
+            </div>
+            <ul className="mt-3 space-y-3">
+              {nextShares.map((share) => {
+                const m = summary.members.find((x) => x.member.id === share.memberId)
+                if (!m) return null
+                return (
+                  <li key={share.memberId} className="flex items-center gap-3">
+                    <Avatar name={m.member.name} id={m.member.id} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14.5px] font-semibold text-ink-900">
+                        {m.member.name}
+                        {share.half ? (
+                          <span className="font-medium text-ink-400"> · ½ hand</span>
+                        ) : (
+                          m.hands > 1 && <span className="font-medium text-ink-400"> · hand {share.handNo}</span>
+                        )}
+                      </p>
+                      <p className="num text-[13px] text-ink-500">
+                        gets <strong className="text-brand-700">{formatMoney(share.net)}</strong>
+                        {share.fee > 0 && <> after {formatMoney(share.fee)} fee</>}
+                        {m.behind > 0 && <span className="font-semibold text-rose-600"> · owes {formatMoney(m.behind)}</span>}
+                      </p>
+                    </div>
+                    <Button variant="accent" size="sm" onClick={() => setPaying(share)}>
+                      Pay out
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )}
       </div>
 
-      <div key={activeTab} className="animate-rise">
-        {activeTab === 'payments' && <PaymentsTab ctx={ctx} onAddMembers={() => openTab('members')} />}
-        {activeTab === 'members' && <MembersTab ctx={ctx} />}
-        {activeTab === 'draws' && <DrawsTab ctx={ctx} onPay={setPaying} />}
-      </div>
+      <div className="view space-y-4">
+        {/* Tabs */}
+        {/* Pinned under the header; the page fades out above the capsule rather than showing sharp through the gap. */}
+        <div ref={tabBar} className="sticky top-[var(--header-h,4rem)] z-20 -mx-4 bg-gradient-to-b from-canvas from-30% to-transparent px-4 py-2.5 sm:-mx-6 sm:px-6">
+          <Segmented
+            size="lg"
+            label="Partner sections"
+            value={activeTab}
+            onChange={openTab}
+            options={[
+              { value: 'payments', label: 'Payments', icon: 'wallet' },
+              { value: 'draws', label: 'Draws', icon: 'gift' },
+              { value: 'members', label: 'Members', icon: 'users' },
+            ]}
+          />
+        </div>
 
-      {partner.notes && (
-        <section className="rounded-3xl bg-surface/60 p-4 ring-1 ring-inset ring-line-soft">
-          <p className="eyebrow mb-1.5">Notes</p>
-          <p className="whitespace-pre-line text-sm leading-relaxed text-ink-600">{partner.notes}</p>
-        </section>
-      )}
+        <div key={activeTab} className="animate-rise">
+          {activeTab === 'payments' && <PaymentsTab ctx={ctx} onAddMembers={() => openTab('members')} />}
+          {activeTab === 'members' && <MembersTab ctx={ctx} />}
+          {activeTab === 'draws' && <DrawsTab ctx={ctx} onPay={setPaying} />}
+        </div>
+
+        {partner.notes && (
+          <section className="rounded-3xl bg-surface/60 p-4 ring-1 ring-inset ring-line-soft">
+            <p className="eyebrow mb-1.5">Notes</p>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-ink-600">{partner.notes}</p>
+          </section>
+        )}
+      </div>
 
       <PartnerForm
         open={editing}

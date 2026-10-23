@@ -76,7 +76,7 @@ export function Header({ onHome }: { onHome?: () => void }) {
         scrolled ? 'border-line-soft shadow-[0_10px_24px_-22px_rgba(0,0,0,0.9)]' : 'border-transparent'
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4 sm:px-6 lg:max-w-6xl">
         {onHome ? (
           <button
             type="button"
