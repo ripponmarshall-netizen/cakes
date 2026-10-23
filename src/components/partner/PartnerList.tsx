@@ -150,124 +150,131 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
           Set the hand, how many months it runs and your fee. Then add members and start ticking off payments.
         </EmptyState>
       ) : (
-        <>
-          {/* Across every partner */}
-          <section className="hero p-5 sm:p-6">
-            <span key={toCents(totals.pot)} className="sheen" aria-hidden />
-            <div className="relative">
-              <p className="text-[13px] font-medium text-accent-600">
-                Cash in hand · {plural(rows.length, 'partner')}
-                {running > 0 && running !== rows.length && <> · {running} running</>}
-              </p>
-              {/* Scales down on narrow phones, so a seven-figure total stays inside the card. */}
-              <AnimatedMoney value={totals.pot} from={0} duration={900} className="mt-1.5 block text-[clamp(28px,9vw,40px)] font-bold leading-none text-ink-900" />
-              <p className="num mt-2.5 text-[13px] text-ink-500">
-                {totals.pot < 0 || rows.some((r) => r.summary.pot < 0) ? (
-                  <span className="inline-flex items-start gap-1.5 font-semibold text-rose-600">
-                    <Icon name="alert" size={14} className="mt-0.5 shrink-0" />
-                    {plural(rows.filter((r) => r.summary.pot < 0).length, 'pot is', 'pots are')} below zero — more paid out than collected
-                  </span>
-                ) : totals.behind > 0 ? (
-                  <>
-                    Should be <span className="font-semibold text-ink-900">{formatMoney(totals.potIfPaidUp)}</span> · {formatMoney(totals.behind)} still owed
-                  </>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Icon name="check" size={14} className="text-brand-600" /> Everyone is paid up
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="relative mt-5 grid grid-cols-3 gap-3 border-t border-accent-500/20 pt-4">
-              <HeroStat label="Owed now" value={totals.behind} tone={totals.behind > 0 ? 'warn' : undefined} />
-              <HeroStat label="At risk" value={totals.exposure} tone={totals.exposure > 0 ? 'bad' : undefined} />
-              <HeroStat
-                label="Your fees"
-                value={totals.feesEarned}
-                sub={totals.feesProjected > totals.feesEarned ? `+${formatMoney(totals.feesProjected - totals.feesEarned)}` : undefined}
-              />
-            </div>
-          </section>
-
-          {/* What needs doing */}
-          {(dueSoon.length > 0 || owing.length > 0) && (
-            <section className="card overflow-hidden">
-              <div className="flex items-center justify-between px-5 pb-1 pt-5">
-                <h2 className="text-[15px] font-semibold tracking-[-0.005em] text-ink-900">Needs attention</h2>
-                <span className="num text-xs font-semibold text-ink-400">{dueSoon.length + owing.length}</span>
-              </div>
-
-              {dueSoon.length > 0 && (
-                <AttentionGroup icon="gift" title="Draws due" tone="accent">
-                  {dueSoon.map(({ partner, share, member, overdue }) => (
-                    <AttentionRow
-                      key={`${partner.id}-${share.slotIndex}-${share.memberId}`}
-                      onClick={() => onOpen(partner.id)}
-                      id={share.memberId}
-                      name={member?.name ?? '—'}
-                      sub={
-                        <>
-                          {overdue && <span className="font-semibold text-rose-600">Overdue · </span>}
-                          {periodLabel(partner.start_date, share.period)}
-                          {share.half ? ' · ½ hand' : ''} · {partner.name}
-                        </>
-                      }
-                      right={<span className="mono text-sm font-semibold text-brand-700">{formatMoney(share.net)}</span>}
-                    />
-                  ))}
-                </AttentionGroup>
-              )}
-
-              {owing.length > 0 && (
-                <AttentionGroup icon="alert" title="Behind on payments" tone="rose">
-                  {(allOwing ? owing : owing.slice(0, 8)).map(({ partner, m }) => (
-                    <AttentionRow
-                      key={m.member.id}
-                      onClick={() => onOpen(partner.id)}
-                      id={m.member.id}
-                      name={m.member.name}
-                      sub={
-                        <>
-                          {m.risk === 'high' && <span className="font-semibold text-rose-600">Drew already · </span>}
-                          {partner.name}
-                        </>
-                      }
-                      right={<span className="mono text-sm font-semibold text-rose-700">{formatMoney(m.behind)}</span>}
-                    />
-                  ))}
-                  {owing.length > 8 && (
-                    <button
-                      type="button"
-                      onClick={() => setAllOwing((v) => !v)}
-                      className="mx-5 mt-1 rounded-lg px-1 py-1.5 text-xs font-semibold text-ink-500 underline underline-offset-[3px] hover:text-ink-900"
-                    >
-                      {allOwing ? 'Show fewer' : `Show all ${owing.length}`}
-                    </button>
+        // iPad in landscape: the totals and what needs doing on the left, the partners beside them.
+        <div className="view-split space-y-5 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-6 lg:space-y-0">
+          <div className="view space-y-5">
+            {/* Across every partner */}
+            <section className="hero p-5 sm:p-6">
+              <span key={toCents(totals.pot)} className="sheen" aria-hidden />
+              <div className="relative">
+                <p className="text-[13px] font-medium text-accent-600">
+                  Cash in hand · {plural(rows.length, 'partner')}
+                  {running > 0 && running !== rows.length && <> · {running} running</>}
+                </p>
+                {/* Scales down on narrow phones, so a seven-figure total stays inside the card. */}
+                <AnimatedMoney value={totals.pot} from={0} duration={900} className="mt-1.5 block text-[clamp(28px,9vw,40px)] font-bold leading-none text-ink-900" />
+                <p className="num mt-2.5 text-[13px] text-ink-500">
+                  {totals.pot < 0 || rows.some((r) => r.summary.pot < 0) ? (
+                    <span className="inline-flex items-start gap-1.5 font-semibold text-rose-600">
+                      <Icon name="alert" size={14} className="mt-0.5 shrink-0" />
+                      {plural(rows.filter((r) => r.summary.pot < 0).length, 'pot is', 'pots are')} below zero — more paid out than collected
+                    </span>
+                  ) : totals.behind > 0 ? (
+                    <>
+                      Should be <span className="font-semibold text-ink-900">{formatMoney(totals.potIfPaidUp)}</span> · {formatMoney(totals.behind)} still owed
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Icon name="check" size={14} className="text-brand-600" /> Everyone is paid up
+                    </span>
                   )}
-                </AttentionGroup>
-              )}
-              <div className="h-3" />
+                </p>
+              </div>
+              <div className="relative mt-5 grid grid-cols-3 gap-3 border-t border-accent-500/20 pt-4">
+                <HeroStat label="Owed now" value={totals.behind} tone={totals.behind > 0 ? 'warn' : undefined} />
+                <HeroStat label="At risk" value={totals.exposure} tone={totals.exposure > 0 ? 'bad' : undefined} />
+                <HeroStat
+                  label="Your fees"
+                  value={totals.feesEarned}
+                  sub={totals.feesProjected > totals.feesEarned ? `+${formatMoney(totals.feesProjected - totals.feesEarned)}` : undefined}
+                />
+              </div>
             </section>
-          )}
 
-          <section>
-            <div className="mb-3 flex items-baseline justify-between px-1">
-              <h2 className="text-[15px] font-semibold tracking-[-0.005em] text-ink-900">Partners</h2>
-              <span className="text-xs font-semibold text-ink-400">{rows.length}</span>
-            </div>
-            <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {rows.map((r, i) => (
-                <PartnerCard key={r.partner.id} row={r} index={i} onOpen={() => onOpen(r.partner.id)} />
-              ))}
-            </div>
-          </section>
+            {/* What needs doing */}
+            {(dueSoon.length > 0 || owing.length > 0) && (
+              <section className="card overflow-hidden">
+                <div className="flex items-center justify-between px-5 pb-1 pt-5">
+                  <h2 className="text-[15px] font-semibold tracking-[-0.005em] text-ink-900">Needs attention</h2>
+                  <span className="num text-xs font-semibold text-ink-400">{dueSoon.length + owing.length}</span>
+                </div>
 
-          <div className="flex justify-center pt-2">
-            <Button variant="ghost" size="sm" onClick={backup} loading={backingUp}>
-              <Icon name="download" size={15} /> Back up everything (JSON)
-            </Button>
+                <div className={dueSoon.length > 0 && owing.length > 0 ? 'md:grid md:grid-cols-2 lg:block' : ''}>
+                  {dueSoon.length > 0 && (
+                    <AttentionGroup icon="gift" title="Draws due" tone="accent">
+                      {dueSoon.map(({ partner, share, member, overdue }) => (
+                        <AttentionRow
+                          key={`${partner.id}-${share.slotIndex}-${share.memberId}`}
+                          onClick={() => onOpen(partner.id)}
+                          id={share.memberId}
+                          name={member?.name ?? '—'}
+                          sub={
+                            <>
+                              {overdue && <span className="font-semibold text-rose-600">Overdue · </span>}
+                              {periodLabel(partner.start_date, share.period)}
+                              {share.half ? ' · ½ hand' : ''} · {partner.name}
+                            </>
+                          }
+                          right={<span className="mono text-sm font-semibold text-brand-700">{formatMoney(share.net)}</span>}
+                        />
+                      ))}
+                    </AttentionGroup>
+                  )}
+
+                  {owing.length > 0 && (
+                    <AttentionGroup icon="alert" title="Behind on payments" tone="rose">
+                      {(allOwing ? owing : owing.slice(0, 8)).map(({ partner, m }) => (
+                        <AttentionRow
+                          key={m.member.id}
+                          onClick={() => onOpen(partner.id)}
+                          id={m.member.id}
+                          name={m.member.name}
+                          sub={
+                            <>
+                              {m.risk === 'high' && <span className="font-semibold text-rose-600">Drew already · </span>}
+                              {partner.name}
+                            </>
+                          }
+                          right={<span className="mono text-sm font-semibold text-rose-700">{formatMoney(m.behind)}</span>}
+                        />
+                      ))}
+                      {owing.length > 8 && (
+                        <button
+                          type="button"
+                          onClick={() => setAllOwing((v) => !v)}
+                          className="mx-5 mt-1 rounded-lg px-1 py-1.5 text-xs font-semibold text-ink-500 underline underline-offset-[3px] hover:text-ink-900"
+                        >
+                          {allOwing ? 'Show fewer' : `Show all ${owing.length}`}
+                        </button>
+                      )}
+                    </AttentionGroup>
+                  )}
+                </div>
+                <div className="h-3" />
+              </section>
+            )}
           </div>
-        </>
+
+          <div className="view space-y-5">
+            <section>
+              <div className="mb-3 flex items-baseline justify-between px-1">
+                <h2 className="text-[15px] font-semibold tracking-[-0.005em] text-ink-900">Partners</h2>
+                <span className="text-xs font-semibold text-ink-400">{rows.length}</span>
+              </div>
+              <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {rows.map((r, i) => (
+                  <PartnerCard key={r.partner.id} row={r} index={i} onOpen={() => onOpen(r.partner.id)} />
+                ))}
+              </div>
+            </section>
+
+            <div className="flex justify-center pt-2">
+              <Button variant="ghost" size="sm" onClick={backup} loading={backingUp}>
+                <Icon name="download" size={15} /> Back up everything (JSON)
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       <PartnerForm open={creating} onClose={() => setCreating(false)} onCreated={onOpen} />

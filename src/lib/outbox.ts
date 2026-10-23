@@ -224,8 +224,12 @@ const defaults = (at: string): Row => ({ created_at: at, voided_at: null, voided
  * The server's rows with queued (and just-saved) writes laid over them:
  * inserts the server doesn't have yet are added, updates are applied.
  * The server's copy wins once it has a row.
+ *
+ * `asOf` is when the server rows were requested. An update the server saved
+ * after that isn't in them yet, so it's still laid over them; without it a
+ * void would flash back to a live row until the reload landed.
  */
-export function mergeRows<T>(table: string, match: (row: Row) => boolean, server: T[], queue: Entry[]): T[] {
+export function mergeRows<T>(table: string, match: (row: Row) => boolean, server: T[], queue: Entry[], asOf = Infinity): T[] {
   if (queue.length === 0) return server
   const byId = new Map<string, Row>()
   for (const r of server as Row[]) byId.set(String(r.id), r)
@@ -245,8 +249,9 @@ export function mergeRows<T>(table: string, match: (row: Row) => boolean, server
     if (op.kind === 'insert' && op.table === table) add(op.rows, e.at)
     else if (op.kind === 'rpc') for (const s of op.shows) if (s.table === table) add(s.rows, e.at)
   }
-  // Updates only matter until the server has them; after that its copy is current.
-  const patches = queue.filter((e) => e.state === 'pending' && e.op.kind === 'update' && e.op.table === table)
+  // Updates only matter until rows fetched after the save arrive; from then on the server's copy is current.
+  const unseen = (e: Entry) => e.state === 'pending' || (e.doneAt ?? 0) > asOf
+  const patches = queue.filter((e) => unseen(e) && e.op.kind === 'update' && e.op.table === table)
   for (const e of patches) {
     const op = e.op as Extract<Op, { kind: 'update' }>
     const row = byId.get(op.id)

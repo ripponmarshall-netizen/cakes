@@ -49,6 +49,15 @@ describe('mergeRows', () => {
     expect(server[1].voided_at).toBeNull()
   })
 
+  it('keeps a saved void showing over rows fetched before it was saved', () => {
+    const saved = { ...entry({ kind: 'update', table: 'contributions', id: 'b', patch: { voided_at: 'now' } }, 'done'), doneAt: 2_000 }
+    // Rows asked for before the save: the server's copy doesn't have it yet.
+    expect(mergeRows('contributions', inP1, server, [saved], 1_000)[1]).toMatchObject({ voided_at: 'now' })
+    // Rows asked for after it: they're current, so they win.
+    expect(mergeRows('contributions', inP1, server, [saved], 3_000)).toBe(server)
+    expect(mergeRows('contributions', inP1, server, [saved])).toBe(server)
+  })
+
   it('shows the rows an RPC will create (a draw and the arrears taken from it)', () => {
     const q = [
       entry({
