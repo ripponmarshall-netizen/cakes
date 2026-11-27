@@ -4,6 +4,7 @@ import { formatHands, formatMoney, methodLabels } from '../../lib/format'
 import type { AuditEntry, PaymentMethod, Profile } from '../../lib/types'
 import { Modal } from '../ui/Modal'
 import { Spinner } from '../ui/Spinner'
+import { Notice } from '../ui/Notice'
 import { Icon, type IconName } from '../ui/Icon'
 import type { PartnerCtx } from './shared'
 
@@ -57,10 +58,10 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
         const what = refund
           ? `refund ${money(row.gross)} to ${memberName(row.member_id)}`
           : `draw ${money(row.net ?? Number(row.gross) - Number(row.fee))} to ${memberName(row.member_id)} · month ${str(row.period)}`
-        if (e.action === 'insert') return { icon: refund ? 'undo' : 'gift', text: what[0].toUpperCase() + what.slice(1), detail: Number(row.fee) > 0 ? `fee ${money(row.fee)}` : undefined }
+        if (e.action === 'insert') return { icon: refund ? 'undo' : 'draw', text: what[0].toUpperCase() + what.slice(1), detail: Number(row.fee) > 0 ? `fee ${money(row.fee)}` : undefined }
         if (e.action === 'void') return { icon: 'ban', text: `Voided ${what}`, detail: str(n.void_reason), tone: 'bad' }
         if (e.action === 'delete') return { icon: 'trash', text: `Deleted ${what}`, tone: 'bad' }
-        return { icon: 'gift', text: `Edited ${what}` }
+        return { icon: 'draw', text: `Edited ${what}` }
       }
       case 'members': {
         if (e.action === 'insert') return { icon: 'users', text: `Added ${str(n.name)}`, detail: formatHands(Number(n.hands)) }
@@ -101,7 +102,7 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
           no_draw_months: 'no-draw months',
         }
         const changed = Object.keys(labels).filter((k) => JSON.stringify(o[k]) !== JSON.stringify(n[k]))
-        if (JSON.stringify(o.draw_order) !== JSON.stringify(n.draw_order) && changed.length === 0) return { icon: 'shuffle', text: 'Changed the draw order' }
+        if (JSON.stringify(o.draw_order) !== JSON.stringify(n.draw_order) && changed.length === 0) return { icon: 'dice', text: 'Changed the draw order' }
         return changed.length ? { icon: 'settings', text: 'Changed settings', detail: changed.map((k) => labels[k]).join(', ') } : null
       }
     }
@@ -111,7 +112,9 @@ export function HistoryModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: bo
   return (
     <Modal open={open} onClose={onClose} title="History" subtitle="Every change, newest first. Kept by the database — it can’t be edited.">
       {error ? (
-        <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
+        <Notice tone="danger" role="alert">
+          {error}
+        </Notice>
       ) : !entries ? (
         <Spinner />
       ) : entries.length === 0 ? (

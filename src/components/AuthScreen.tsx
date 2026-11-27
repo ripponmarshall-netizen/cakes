@@ -4,6 +4,7 @@ import { useToast } from './ui/Toast'
 import { Button } from './ui/Button'
 import { Field, Input, Segmented } from './ui/Input'
 import { Icon } from './ui/Icon'
+import { Notice } from './ui/Notice'
 import { Logo } from './Logo'
 
 const INVITE_CODE = import.meta.env.VITE_SIGNUP_INVITE_CODE as string
@@ -112,10 +113,9 @@ export function AuthScreen() {
           )}
 
           {error && (
-            <p className="animate-fade flex items-start gap-2 rounded-2xl bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-700 ring-1 ring-inset ring-rose-200/70">
-              <Icon name="alert" size={16} className="mt-0.5 shrink-0" />
+            <Notice tone="danger" role="alert" className="animate-fade">
               {error}
-            </p>
+            </Notice>
           )}
 
           <Button type="submit" loading={submitting} className="w-full">

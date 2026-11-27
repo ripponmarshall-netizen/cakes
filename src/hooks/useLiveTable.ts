@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { readCache, writeCache } from '../lib/cache'
+import { readCache, writeCacheLater } from '../lib/cache'
 import { mergeRows, outbox } from '../lib/outbox'
 import { supabase } from '../lib/supabase'
 
@@ -63,7 +63,9 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
       setError(null)
       setRows(all)
       setAsOf(startedAt)
-      writeCache(cacheKey, all)
+      // The offline copy is written when the phone is idle: serialising a
+      // whole table on every refresh would hold up the screen it's drawing.
+      writeCacheLater(cacheKey, all)
     }
     setLoading(false)
   }, [table, orderBy, column, value, skip, cacheKey])
@@ -87,6 +89,12 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
     setLoading(!cached)
     load()
     window.addEventListener('online', loadSoon)
+    // Back from the background (an installed iPhone app is frozen there): the
+    // realtime socket was dropped and doesn't replay what it missed.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadSoon()
+    }
+    document.addEventListener('visibilitychange', onVisible)
     const offSaved = outbox.onSaved((tables) => {
       if (tables.includes(table)) loadSoon()
     })
@@ -99,8 +107,11 @@ export function useLiveTable<T>(table: string, { filter, orderBy = 'created_at' 
       )
       .subscribe()
     return () => {
+      // A load still in flight belongs to a screen that's gone (or a user who signed out): drop it.
+      requestId.current++
       clearTimeout(timer.current)
       window.removeEventListener('online', loadSoon)
+      document.removeEventListener('visibilitychange', onVisible)
       offSaved()
       supabase.removeChannel(channel)
     }

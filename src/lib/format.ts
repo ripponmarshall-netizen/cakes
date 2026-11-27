@@ -104,9 +104,20 @@ export function monthNames(startIso: string, periods: number[]): string {
   return contiguous ? `${short(periods[0])}–${short(periods[periods.length - 1])}` : periods.map(short).join(', ')
 }
 
-/** "today", "yesterday", "3 days ago", then "Sep 12" — for when something last happened. */
+/** A timestamp, or a YYYY-MM-DD date read as a local date (new Date() would read it as UTC midnight: the day before, in Jamaica). */
+function toLocalDate(iso: string): Date {
+  const day = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(iso)
+}
+
+/** "Jun 3, 2026" for the local day of a timestamp ("2026-06-03T02:10:00Z" is still Jun 2 in Kingston). */
+export function formatDay(iso: string): string {
+  return toLocalDate(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+/** "today", "yesterday", "3 days ago", then "Sep 12" — for when something last happened. Takes a timestamp or a YYYY-MM-DD date. */
 export function timeAgo(iso: string, now: Date = new Date()): string {
-  const then = new Date(iso)
+  const then = toLocalDate(iso)
   const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const days = Math.round((day(now) - day(then)) / 86_400_000)
   if (days <= 0) return 'today'

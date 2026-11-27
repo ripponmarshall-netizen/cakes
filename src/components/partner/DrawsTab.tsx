@@ -10,6 +10,7 @@ import { useConfirm } from '../ui/Confirm'
 import { Button, IconButton } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { Icon } from '../ui/Icon'
+import { Notice } from '../ui/Notice'
 import { VoidDialog } from './VoidDialog'
 import { Avatar, type PartnerCtx } from './shared'
 import { useLast } from '../../hooks/usePresence'
@@ -27,7 +28,7 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
 
   if (schedule.length === 0) {
     return (
-      <EmptyState icon="gift" title="No draws yet">
+      <EmptyState icon="draw" title="No draws yet">
         Each hand gets one draw; two half hands share one. Add members and the draw order appears here.
       </EmptyState>
     )
@@ -102,19 +103,16 @@ export function DrawsTab({ ctx, onPay }: { ctx: PartnerCtx; onPay: (share: DrawS
           </p>
         </div>
         <Button size="sm" variant="secondary" onClick={shuffle} loading={saving} disabled={schedule.every((s) => s.locked)}>
-          <Icon name="shuffle" size={15} /> Draw lots
+          <Icon name="dice" size={15} /> Draw lots
         </Button>
       </div>
 
       {shortfall && (
-        <p className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
-          <Icon name="alert" size={16} className="mt-px shrink-0" />
-          <span>
-            Even if everyone pays on time, the pot is short for the month {shortfall.period} draw (up to{' '}
-            <strong className="num">{formatMoney(shortfall.short)}</strong>). Move a no-draw month earlier in partner settings, or plan to
-            front it.
-          </span>
-        </p>
+        <Notice tone="warn">
+          Even if everyone pays on time, the pot is short for the month {shortfall.period} draw (up to{' '}
+          <strong className="num">{formatMoney(shortfall.short)}</strong>). Move a no-draw month earlier in partner settings, or plan to
+          front it.
+        </Notice>
       )}
 
       <ol className="card stagger divide-y divide-line-soft overflow-hidden">
@@ -342,9 +340,11 @@ function MoveDrawModal({
   return (
     <Modal open={from !== null} onClose={onClose} title="Move draw" subtitle={who(slots[shownFrom])}>
       {lo === hi && (
-        <p className="mb-3 rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-600">Paid draws on both sides — there’s nowhere to move this one.</p>
+        <Notice tone="neutral" icon="lock" className="mb-3">
+          Paid draws on both sides — there’s nowhere to move this one.
+        </Notice>
       )}
-      <ol className="divide-y divide-line-soft rounded-2xl pb-2 ring-1 ring-inset ring-line">
+      <ol className="group-list mb-2">
         {slots.map((s, i) => {
           const allowed = i >= lo && i <= hi && i !== shownFrom
           return (

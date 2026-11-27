@@ -22,25 +22,73 @@ export function lastReminded(reminders: Reminder[], memberId: string): string | 
   return last
 }
 
-// Muted, harmonised tints: deep text on a soft wash of the same hue.
-const avatarColors = [
-  'bg-brand-100 text-brand-800',
-  'bg-accent-100 text-accent-700',
-  'bg-sky-100 text-sky-800',
-  'bg-rose-100 text-rose-800',
-  'bg-amber-100 text-amber-800',
-  'bg-ink-100 text-ink-700',
-]
+/** Eight identity tints (--av-1…8 in index.css), none of them a status colour. */
+const AVATAR_TINTS = 8
 
 export function Avatar({ name, id, size = 'md' }: { name: string; id: string; size?: 'sm' | 'md' | 'lg' }) {
   const hash = [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0)
+  const n = (hash % AVATAR_TINTS) + 1
   const dims = size === 'sm' ? 'h-9 w-9 text-[11px]' : size === 'lg' ? 'h-14 w-14 text-base' : 'h-10 w-10 text-xs'
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full font-bold ring-2 ring-surface ${dims} ${avatarColors[hash % avatarColors.length]}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-bold tracking-[0.02em] ${dims}`}
+      style={{ background: `rgb(var(--av-${n}-bg))`, color: `rgb(var(--av-${n}-fg))` }}
       aria-hidden
     >
       {initials(name)}
+    </div>
+  )
+}
+
+/**
+ * The cycle, month by month: one segment per month, filled up to the current
+ * one (which glows), months with no draw drawn hollow. Long cycles (over three
+ * years) fall back to a plain bar.
+ */
+export function CycleTrack({
+  term,
+  rawPeriod,
+  noDraw = [],
+  tone = 'accent',
+  track = 'bg-ink-100',
+  className = '',
+}: {
+  term: number
+  rawPeriod: number
+  noDraw?: number[]
+  tone?: 'accent' | 'brand'
+  /** The empty segments' colour. */
+  track?: string
+  className?: string
+}) {
+  const fill = tone === 'brand' ? 'bg-brand-600' : 'bg-accent-600'
+  const label = rawPeriod < 1 ? 'Not started' : rawPeriod > term ? 'Finished' : `Month ${rawPeriod} of ${term}`
+  if (term > 36) {
+    const pct = Math.max(0, Math.min(1, rawPeriod / term)) * 100
+    return (
+      <div className={`h-1.5 overflow-hidden rounded-full ${track} ${className}`} role="img" aria-label={label}>
+        <div className={`h-full origin-left animate-grow-x rounded-full ${fill}`} style={{ width: `${pct}%` }} />
+      </div>
+    )
+  }
+  const skip = new Set(noDraw)
+  return (
+    <div className={`flex h-1.5 gap-[3px] ${className}`} role="img" aria-label={label}>
+      {Array.from({ length: term }, (_, i) => {
+        const m = i + 1
+        const state = m < rawPeriod ? 'past' : m === rawPeriod ? 'now' : 'future'
+        return (
+          <span key={m} className={`relative min-w-0 flex-1 overflow-hidden rounded-full ${track}`}>
+            {state !== 'future' && (
+              <span
+                className={`absolute inset-0 origin-left animate-grow-x rounded-full ${fill} ${state === 'now' ? 'cycle-now' : ''}`}
+                style={{ animationDelay: state === 'now' ? `${Math.min(i, 24) * 22}ms, ${Math.min(i, 24) * 22 + 1200}ms` : `${Math.min(i, 24) * 22}ms` }}
+              />
+            )}
+            {skip.has(m) && <span className="absolute inset-[1.5px] rounded-full bg-surface/90" />}
+          </span>
+        )
+      })}
     </div>
   )
 }

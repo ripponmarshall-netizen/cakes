@@ -16,7 +16,7 @@ export function OfflineBanner() {
         onClick={() => void outbox.flush()}
         className="animate-fade block w-full border-t border-sky-200/70 bg-sky-50 px-4 py-2 text-center text-xs font-semibold text-sky-900"
       >
-        <Icon name="clock" size={14} className="mr-1.5 inline -translate-y-px" />
+        <Icon name="sync" size={14} className="mr-1.5 inline -translate-y-px animate-spin [animation-duration:2.4s]" />
         Syncing {plural(waiting, 'change')}… tap to retry now
       </button>
     )

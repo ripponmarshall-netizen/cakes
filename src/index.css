@@ -49,6 +49,16 @@
   --shadow-card: none;
   --shadow-float: 0 16px 40px -20px rgba(0, 0, 0, 0.18);
   --shadow-lift: 0 24px 60px -24px rgba(0, 0, 0, 0.28);
+  /* Member avatars: identity colours kept apart from the status colours, so a
+     red or amber avatar never reads as "owes money". Background / text. */
+  --av-1-bg: 232 234 254; --av-1-fg: 67 56 202;
+  --av-2-bg: 204 243 238; --av-2-fg: 15 110 102;
+  --av-3-bg: 240 233 254; --av-3-fg: 109 40 217;
+  --av-4-bg: 252 231 243; --av-4-fg: 176 24 93;
+  --av-5-bg: 224 242 254; --av-5-fg: 3 99 151;
+  --av-6-bg: 243 236 226; --av-6-fg: 120 79 39;
+  --av-7-bg: 230 245 210; --av-7-fg: 70 112 18;
+  --av-8-bg: 228 232 239; --av-8-fg: 61 72 92;
   color-scheme: light;
 }
 
@@ -79,6 +89,14 @@
     --shadow-card: none;
     --shadow-float: 0 16px 40px -16px rgba(0, 0, 0, 0.7);
     --shadow-lift: 0 24px 60px -20px rgba(0, 0, 0, 0.75);
+    --av-1-bg: 46 44 92; --av-1-fg: 172 184 255;
+    --av-2-bg: 18 60 56; --av-2-fg: 110 231 211;
+    --av-3-bg: 58 40 92; --av-3-fg: 200 184 255;
+    --av-4-bg: 78 30 56; --av-4-fg: 250 170 214;
+    --av-5-bg: 18 52 77; --av-5-fg: 130 208 252;
+    --av-6-bg: 64 48 32; --av-6-fg: 230 196 150;
+    --av-7-bg: 40 60 20; --av-7-fg: 186 236 110;
+    --av-8-bg: 50 55 66; --av-8-fg: 200 210 224;
     color-scheme: dark;
   }
 }
@@ -177,6 +195,12 @@
     box-shadow: inset 0 0 0 1px var(--card-edge);
   }
 
+  /* A grouped list inside a sheet (payments, draws, counts, bankers): rows
+     split by hairlines, in a rounded frame. */
+  .group-list {
+    @apply divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line;
+  }
+
   /* Small section label: sentence case, sans, muted (the calculator's
      .label). Calmer to scan than uppercase eyebrows. */
   .eyebrow {
@@ -198,6 +222,10 @@
     background: linear-gradient(90deg, transparent, rgb(var(--accent-500) / 0.22), transparent);
     transform: translateX(-120%) skewX(-18deg);
     animation: sheen 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+  }
+  /* The same sweep in "paid" green, when a month is settled. */
+  .sheen-good {
+    background: linear-gradient(90deg, transparent, rgb(var(--brand-500) / 0.22), transparent);
   }
 
   /* Anything tappable: colours ease, and the press (below) springs back on
@@ -459,6 +487,30 @@ button[role='tab']:active {
     background-position: -200% 0;
   }
 }
+/* The month the cycle is in (CycleTrack): grows in with the rest, then breathes. */
+.cycle-now {
+  animation:
+    grow-x 0.8s var(--ease-snappy) backwards,
+    breathe 2.8s ease-in-out 1.2s infinite;
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* Squash and stretch: a quick squash (ease-out), then the spring lets go. */
 @keyframes boing {
   0% {

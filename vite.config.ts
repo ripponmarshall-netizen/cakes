@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -36,6 +37,14 @@ export default defineConfig({
   // On GitHub Pages the app is served from /<repo>/; locally it stays at /.
   // The deploy workflow sets BASE_PATH=/cakes/.
   base: process.env.BASE_PATH || '/',
+  resolve: {
+    // supabase-js bundles its file Storage and Edge Functions clients; this app
+    // uses neither, so they're swapped for tiny stand-ins (see the file).
+    alias: {
+      '@supabase/storage-js': fileURLToPath(new URL('./src/lib/supabaseStubs.ts', import.meta.url)),
+      '@supabase/functions-js': fileURLToPath(new URL('./src/lib/supabaseStubs.ts', import.meta.url)),
+    },
+  },
   server: {
     port: 5173,
     host: true,

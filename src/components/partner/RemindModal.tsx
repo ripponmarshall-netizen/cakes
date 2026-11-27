@@ -40,7 +40,7 @@ export function RemindModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: boo
         </div>
       ) : (
         <>
-          <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
+          <ul className="group-list">
             {behind.map(({ m, months }) => {
               const hasPhone = !!normalizePhone(m.member.phone)
               // Logged reminders (kept in the database), so "Sent" survives closing the sheet.

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useLedger } from '../../hooks/usePartnerData'
-import { drawsDueSoon, summarizePartner, toCents, type PartnerSummary } from '../../lib/calc'
+import { drawsDueSoon, noDrawMonths, summarizePartner, toCents, type PartnerSummary } from '../../lib/calc'
 import { downloadFile } from '../../lib/csv'
-import { formatDate, formatMoney, formatMoneyShort, periodLabel, plural, todayIso } from '../../lib/format'
+import { formatDate, formatMoney, periodLabel, plural, todayIso } from '../../lib/format'
 import { firstName } from '../../lib/whatsapp'
 import { fetchAll } from '../../lib/fetchAll'
 import type { Partner } from '../../lib/types'
@@ -14,8 +14,9 @@ import { EmptyState } from '../ui/EmptyState'
 import { Icon, type IconName } from '../ui/Icon'
 import { AnimatedMoney } from '../ui/AnimatedMoney'
 import { Skeleton } from '../ui/Skeleton'
+import { Notice } from '../ui/Notice'
 import { PartnerForm } from './PartnerForm'
-import { Avatar } from './shared'
+import { Avatar, CycleTrack } from './shared'
 
 interface Row {
   partner: Partner
@@ -123,10 +124,9 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
       </div>
 
       {ledger.error && (
-        <p className="flex items-start gap-2 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800 ring-1 ring-rose-200/70">
-          <Icon name="alert" size={16} className="mt-0.5 shrink-0" />
+        <Notice tone="danger" role="alert">
           {ledger.error}
-        </p>
+        </Notice>
       )}
 
       {loading ? (
@@ -201,7 +201,7 @@ export function PartnerList({ onOpen }: { onOpen: (id: string) => void }) {
 
                 <div className={dueSoon.length > 0 && owing.length > 0 ? 'md:grid md:grid-cols-2 lg:block' : ''}>
                   {dueSoon.length > 0 && (
-                    <AttentionGroup icon="gift" title="Draws due" tone="accent">
+                    <AttentionGroup icon="draw" title="Draws due" tone="accent">
                       {dueSoon.map(({ partner, share, member, overdue }) => (
                         <AttentionRow
                           key={`${partner.id}-${share.slotIndex}-${share.memberId}`}
@@ -290,8 +290,7 @@ function HeroStat({ label, value, sub, tone }: { label: string; value: number; s
         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
         <span className="truncate">{label}</span>
       </p>
-      <AnimatedMoney value={value} className="mt-1 block truncate text-[15px] font-semibold text-ink-900 max-[359px]:hidden sm:text-lg" />
-      <span className="mono mt-1 block truncate text-[15px] font-semibold text-ink-900 min-[360px]:hidden">{formatMoneyShort(value)}</span>
+      <AnimatedMoney fit value={value} className="mt-1 block text-[15px] font-semibold text-ink-900 sm:text-lg" />
       {sub && <p className="num truncate text-[11px] text-ink-400">{sub}</p>}
     </div>
   )
@@ -327,7 +326,6 @@ function AttentionRow({ id, name, sub, right, onClick }: { id: string; name: str
 
 function PartnerCard({ row, index, onOpen }: { row: Row; index: number; onOpen: () => void }) {
   const { partner, summary: s } = row
-  const progress = Math.max(0, Math.min(1, s.rawPeriod / partner.term_months))
   const status =
     s.status === 'upcoming' ? (
       <Badge tone="blue">Starts {formatDate(partner.start_date)}</Badge>
@@ -362,9 +360,7 @@ function PartnerCard({ row, index, onOpen }: { row: Row; index: number; onOpen: 
         <Icon name="arrow-right" size={18} className="mb-1.5 text-ink-300 transition duration-300 group-hover:translate-x-1 group-hover:text-accent-600" />
       </div>
 
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink-100" aria-hidden>
-        <div className="h-full origin-left animate-grow-x rounded-full bg-accent-600 transition-[width] duration-700 ease-out" style={{ width: `${progress * 100}%` }} />
-      </div>
+      <CycleTrack term={partner.term_months} rawPeriod={s.rawPeriod} noDraw={noDrawMonths(partner)} tone={s.status === 'complete' ? 'brand' : 'accent'} className="mt-3" />
 
       {(s.behind > 0 || s.exposure > 0 || s.pot < 0) && (
         <div className="mt-3 flex flex-wrap gap-1.5">

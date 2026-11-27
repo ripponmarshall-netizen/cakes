@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
-import { formatDate } from '../lib/format'
+import { formatDay } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from './ui/Toast'
 import { useConfirm } from './ui/Confirm'
@@ -8,6 +8,7 @@ import { Modal } from './ui/Modal'
 import { Button } from './ui/Button'
 import { Field, Input } from './ui/Input'
 import { Spinner } from './ui/Spinner'
+import { Notice } from './ui/Notice'
 import { Avatar } from './partner/shared'
 
 interface Banker {
@@ -76,11 +77,13 @@ export function BankersModal({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <Modal open={open} onClose={onClose} title="Bankers" subtitle="Everyone who can open and change this ledger.">
       {error ? (
-        <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
+        <Notice tone="danger" role="alert">
+          {error}
+        </Notice>
       ) : !bankers ? (
         <Spinner />
       ) : (
-        <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
+        <ul className="group-list">
           {bankers.map((b) => (
             <li key={b.user_id} className="flex items-center gap-3 px-4 py-3">
               <Avatar name={b.display_name} id={b.user_id} size="sm" />
@@ -90,7 +93,7 @@ export function BankersModal({ open, onClose }: { open: boolean; onClose: () => 
                   {b.user_id === session?.user.id && <span className="font-medium text-ink-400"> · you</span>}
                 </p>
                 <p className="truncate text-xs text-ink-500">
-                  {b.email} · since {formatDate(b.added_at.slice(0, 10))}
+                  {b.email} · since {formatDay(b.added_at)}
                 </p>
               </div>
               {bankers.length > 1 && (

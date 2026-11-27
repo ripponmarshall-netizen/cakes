@@ -119,7 +119,7 @@ export function ContributionModal({
           voided ? 'bg-ink-100 text-ink-400' : c.method === 'deduction' ? 'bg-accent-100 text-accent-700' : 'bg-brand-50 text-brand-600'
         }`}
       >
-        <Icon name={voided ? 'ban' : c.method === 'deduction' ? 'gift' : 'check'} size={14} />
+        <Icon name={voided ? 'ban' : c.method === 'deduction' ? 'draw' : 'check'} size={14} />
       </span>
       <div className="min-w-0 flex-1">
         <p className={`num flex items-center gap-2 font-semibold ${voided ? 'text-ink-400 line-through' : 'text-ink-900'}`}>
@@ -188,7 +188,7 @@ export function ContributionModal({
       {row.entries.length + row.voided.length > 0 && (
         <>
           <p className="eyebrow mb-2 px-1">This month’s payments</p>
-          <ul className="mb-5 divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
+          <ul className="mb-5 group-list">
             {row.entries.map((c) => entry(c, false))}
             {row.voided.map((c) => entry(c, true))}
           </ul>

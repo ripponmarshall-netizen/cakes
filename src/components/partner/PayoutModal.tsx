@@ -9,7 +9,7 @@ import { useToast } from '../ui/Toast'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field, Input, MoneyInput } from '../ui/Input'
-import { Icon } from '../ui/Icon'
+import { Notice } from '../ui/Notice'
 import { AnimatedMoney } from '../ui/AnimatedMoney'
 import { MethodPicker } from './MethodPicker'
 import { lastMethod, rememberMethod } from './ContributionModal'
@@ -158,29 +158,28 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
         </div>
 
         {owedC > 0 && (
-          <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-900 ring-1 ring-inset ring-rose-200/70">
-            <p className="flex items-start gap-2.5 leading-relaxed">
-              <Icon name="alert" size={17} className="mt-0.5 shrink-0 text-rose-500" />
-              <span>
-                <strong>{member.name}</strong> is behind <strong className="num">{formatMoney(owedC / 100)}</strong> (
-                {monthsLabel(arrears.map((a) => a.period)).toLowerCase()}). Once they draw, anything unpaid is money the group can lose.
-              </span>
-            </p>
-            <label className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl bg-surface/70 px-3 py-2.5 font-semibold ring-1 ring-inset ring-rose-200/60">
-              <input type="checkbox" checked={deduct} onChange={(e) => setDeduct(e.target.checked)} className="h-4 w-4 rounded accent-accent-600" />
-              Take it out of this draw
-            </label>
-          </div>
+          <Notice
+            tone="danger"
+            action={
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-surface/80 px-3 py-2.5 font-semibold text-ink-900 ring-1 ring-inset ring-rose-200/60">
+                <span className="min-w-0 flex-1">
+                  Take it out of this draw
+                  {deduct && deductC > 0 && <span className="num block text-xs font-medium text-ink-500">−{formatMoney(deductC / 100)} from what they receive</span>}
+                </span>
+                <input type="checkbox" checked={deduct} onChange={(e) => setDeduct(e.target.checked)} className="switch focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70" />
+              </label>
+            }
+          >
+            <strong>{member.name}</strong> is behind <strong className="num">{formatMoney(owedC / 100)}</strong> (
+            {monthsLabel(arrears.map((a) => a.period)).toLowerCase()}). Once they draw, anything unpaid is money the group can lose.
+          </Notice>
         )}
 
         {short > 0 && (
-          <p className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
-            <Icon name="alert" size={16} className="mt-px shrink-0" />
-            <span>
-              The pot only holds <strong className="num">{formatMoney(summary.pot)}</strong> — {formatMoney(short)} short of this draw.
-              {summary.behind > 0 && <> Members owe {formatMoney(summary.behind)}.</>}
-            </span>
-          </p>
+          <Notice tone="warn">
+            The pot only holds <strong className="num">{formatMoney(summary.pot)}</strong> — {formatMoney(short)} short of this draw.
+            {summary.behind > 0 && <> Members owe {formatMoney(summary.behind)}.</>}
+          </Notice>
         )}
 
         <div className="grid grid-cols-2 gap-3">
@@ -191,7 +190,11 @@ export function PayoutModal({ ctx, share: liveShare, onClose }: { ctx: PartnerCt
             <MoneyInput value={fee} onChange={(e) => setFee(e.target.value)} />
           </Field>
         </div>
-        {!valid && grossN > 0 && <p className="-mt-2 text-xs font-semibold text-rose-600">The fee can’t be more than the draw.</p>}
+        {!valid && grossN > 0 && (
+          <p role="alert" className="-mt-2 text-xs font-semibold text-rose-600">
+            The fee can’t be more than the draw.
+          </p>
+        )}
 
         <MethodPicker method={method} onMethod={setMethod} reference={reference} onReference={setReference} />
         <div className="grid grid-cols-2 gap-3">

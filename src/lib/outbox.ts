@@ -215,6 +215,10 @@ function prune() {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => void flush())
+  // Back in the foreground: try at once rather than waiting out the retry timer.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && entries.some((e) => e.state === 'pending')) void flush()
+  })
 }
 
 /** Fields every ledger row has, for showing a row before the server has filled them in. */

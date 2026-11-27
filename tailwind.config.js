@@ -4,6 +4,10 @@ const v = (name) => `rgb(var(--${name}) / <alpha-value>)`
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  // hover: styles only on devices that really hover. On iPhone a tap leaves
+  // :hover stuck on what was tapped (a button stays in its hover colour until
+  // you tap something else); presses are shown by .tap:active instead.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       fontFamily: {
