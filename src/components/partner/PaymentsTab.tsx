@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { arrearsByPeriod, periodRows, type PeriodRow } from '../../lib/calc'
-import { formatHands, formatMoney, methodLabels, monthNames, periodDay, periodLabel, plural, todayIso } from '../../lib/format'
+import { formatHands, formatMoney, formatShortDate, methodLabels, monthNames, periodDay, periodLabel, plural, todayIso } from '../../lib/format'
 import { firstName, normalizePhone, receiptMessage, waLink } from '../../lib/whatsapp'
 import { logMessage, outcomeMessage, recordPayments, undoPayments } from '../../lib/ledgerWrites'
 import { useAuth } from '../../context/AuthContext'
@@ -47,6 +47,16 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
     }
     return out
   }, [summary, partner, members, contributions, current])
+
+  // The moment a month becomes fully paid (not on arrival at a paid month): a light sweeps the card.
+  const [cheer, setCheer] = useState(0)
+  const wasAllPaid = useRef({ period: current, all: false })
+  const nowAllPaid = rows.length > 0 && rows.every((r) => r.status === 'paid')
+  useEffect(() => {
+    const before = wasAllPaid.current
+    if (before.period === current && !before.all && nowAllPaid) setCheer((n) => n + 1)
+    wasAllPaid.current = { period: current, all: nowAllPaid }
+  }, [current, nowAllPaid])
 
   const when =
     summary.status === 'upcoming' || current > summary.rawPeriod
@@ -132,12 +142,14 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
   }
 
   const isCurrent = summary.status === 'active' && current === summary.period
+  const allPaid = nowAllPaid
 
   return (
     <div className="space-y-4">
       {/* Month picker + progress */}
-      <div className="card p-[18px]">
-        <div className="flex items-center justify-between gap-2">
+      <div className="card relative overflow-hidden p-[18px]">
+        {cheer > 0 && <span key={cheer} className="sheen sheen-good" aria-hidden />}
+        <div className="relative flex items-center justify-between gap-2">
           <IconButton label="Previous month" onClick={() => setPeriod(current - 1)} disabled={current <= 1} className="h-11 w-11">
             <Icon name="chevron-left" size={20} />
           </IconButton>
@@ -158,9 +170,9 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
             <span className="mono font-semibold text-ink-900">
               {formatMoney(paid)} <span className="font-normal text-ink-400">of {formatMoney(due)}</span>
             </span>
-            <span className={`text-xs font-semibold ${paidCount === rows.length ? 'text-brand-600' : 'text-ink-500'}`}>
-              {paidCount === rows.length ? (
-                <span className="inline-flex items-center gap-1">
+            <span className={`text-xs font-semibold ${allPaid ? 'text-brand-600' : 'text-ink-500'}`}>
+              {allPaid ? (
+                <span key={cheer} className={`inline-flex items-center gap-1 ${cheer ? 'animate-pop' : ''}`}>
                   <Icon name="check" size={13} /> All paid
                 </span>
               ) : (
@@ -175,7 +187,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
 
         {draws.length === 0 && summary.schedule.length > 0 && (
           <p className="mt-4 flex items-center gap-1.5 border-t border-line-soft pt-3.5 text-xs text-ink-500">
-            <Icon name="gift" size={14} className="text-ink-300" />
+            <Icon name="draw" size={14} className="text-ink-300" />
             <span>
               <span className="font-medium">No draw this month</span> — payments go into the pot
             </span>
@@ -184,7 +196,7 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
 
         {draws.length > 0 && (
           <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line-soft pt-3.5 text-xs text-ink-500">
-            <Icon name="gift" size={14} className="text-accent-600" />
+            <Icon name="draw" size={14} className="text-accent-600" />
             <span className="mr-0.5 font-medium">Drawing this month</span>
             {draws.map((d) => {
               const m = members.find((x) => x.id === d.memberId)
@@ -229,12 +241,14 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
               <Avatar name={r.member.name} id={r.member.id} />
               <div className="min-w-0">
                 <p className="truncate text-[14.5px] font-semibold text-ink-900">{r.member.name}</p>
-                <p className="num text-xs text-ink-500">
+                <p className="num truncate text-xs text-ink-500">
                   {Number(r.member.hands) !== 1 && <>{formatHands(r.member.hands)} · </>}
                   {r.status === 'partial' ? (
                     <>
                       <span className="font-semibold text-amber-700">{formatMoney(r.remaining)} left</span> of {formatMoney(r.due)}
                     </>
+                  ) : r.status === 'paid' && r.entries.length > 0 ? (
+                    <PaidOn row={r} />
                   ) : (
                     formatMoney(r.due)
                   )}
@@ -285,5 +299,17 @@ export function PaymentsTab({ ctx, onAddMembers }: { ctx: PartnerCtx; onAddMembe
 
       <ContributionModal ctx={ctx} row={selected} period={current} onClose={() => setOpenRow(null)} />
     </div>
+  )
+}
+
+/** "J$10,000 · Nov 2 · Lynk": when, and how, the month was settled. */
+function PaidOn({ row }: { row: PeriodRow }) {
+  const last = row.entries.reduce((a, c) => (c.paid_on > a.paid_on ? c : a))
+  const methods = [...new Set(row.entries.map((c) => c.method))]
+  return (
+    <>
+      {formatMoney(row.due)} · {formatShortDate(last.paid_on)}
+      <span className="max-[359px]:hidden"> · {methods.length > 1 ? 'mixed' : methodLabels[methods[0]]}</span>
+    </>
   )
 }

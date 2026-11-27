@@ -12,7 +12,7 @@ import { outbox } from '../lib/outbox'
 import { BankersModal } from './BankersModal'
 
 const themeCycle: Record<ThemePref, { next: ThemePref; icon: IconName; label: string }> = {
-  system: { next: 'light', icon: 'monitor', label: 'Theme: follows your phone' },
+  system: { next: 'light', icon: 'contrast', label: 'Theme: follows your phone' },
   light: { next: 'dark', icon: 'sun', label: 'Theme: light' },
   dark: { next: 'system', icon: 'moon', label: 'Theme: dark' },
 }

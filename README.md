@@ -164,7 +164,9 @@ Variables if needed.
 src/
   lib/          calc.ts (all money maths), format.ts, types.ts, supabase.ts,
                 whatsapp.ts, csv.ts, cache.ts (offline copy), outbox.ts
-                (queued, retry-safe writes), ledgerWrites.ts, rounds.ts
+                (queued, retry-safe writes), ledgerWrites.ts, rounds.ts,
+                supabaseStubs.ts (keeps unused Supabase Storage/Functions
+                out of the bundle; see vite.config.ts)
   hooks/        useLiveTable (realtime), usePartnerData, useAdmin, useHashRoute
   components/
     AuthScreen, AccessGate, Header, Logo, PublicStatement, OfflineBanner,
@@ -174,6 +176,7 @@ src/
                 PayoutModal, StatementView/Modal, ReplaceMemberModal,
                 RemindModal, HistoryModal, ExportModal, VoidDialog,
                 CashCountModal, NextRoundModal
-    ui/         Button, Input, Modal, Confirm, Toast, Badge, Icon, …
+    ui/         Button, Input, Modal, Confirm, Toast, Badge, Notice (the one
+                callout style), Icon (the app's own duotone icon set), …
 supabase/migrations/   schema + RLS
 ```

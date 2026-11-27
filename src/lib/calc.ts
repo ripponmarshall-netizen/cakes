@@ -468,6 +468,17 @@ export interface PartnerSummary {
 const sumCents = <T>(items: T[], pick: (x: T) => number | string) =>
   items.reduce((acc, x) => acc + toCents(pick(x)), 0)
 
+function groupBy<T>(items: T[], key: (x: T) => string): Map<string, T[]> {
+  const out = new Map<string, T[]>()
+  for (const x of items) {
+    const k = key(x)
+    const list = out.get(k)
+    if (list) list.push(x)
+    else out.set(k, [x])
+  }
+  return out
+}
+
 export function summarizePartner(
   partner: Partner,
   members: Member[],
@@ -490,15 +501,19 @@ export function summarizePartner(
   const schedule = buildSchedule(partner, members, payouts)
   const allShares = schedule.flatMap((s) => s.shares)
   const owner = ownerResolver(members)
+  // Grouped once by who holds the money now, rather than filtered per member.
+  const paidBy = groupBy(contributions, (c) => owner(c.member_id))
+  const drawnBy = groupBy(draws, (p) => owner(p.member_id))
+  const sharesOf = groupBy(allShares, (s) => s.memberId)
 
   const memberSummaries: MemberSummary[] = [...active].sort(byCreated).map((member) => {
     const monthly = Math.round((t.hand * halvesOf(member)) / 2)
     const due = monthly * period
-    const paid = sumCents(contributions.filter((c) => owner(c.member_id) === member.id), (c) => c.amount)
-    const mine = draws.filter((p) => owner(p.member_id) === member.id)
+    const paid = sumCents(paidBy.get(member.id) ?? [], (c) => c.amount)
+    const mine = drawnBy.get(member.id) ?? []
     const receivedGross = sumCents(mine, (p) => p.gross)
     const received = sumCents(mine, (p) => p.net)
-    const shares = allShares.filter((s) => s.memberId === member.id)
+    const shares = sharesOf.get(member.id) ?? []
     const entGross = sumCents(shares, (s) => s.gross)
     const entFee = sumCents(shares, (s) => s.fee)
     const behind = Math.max(0, due - paid)
@@ -559,7 +574,9 @@ export function summarizePartner(
     payoutsCount: allShares.filter((s) => s.payout).length,
     drawsCount: allShares.length,
     feesEarned: dollars(sumCents(payouts, (p) => p.fee)),
-    feesProjected: dollars(sumCents(allShares, (s) => s.fee)),
+    // What's been taken plus what the open draws will bring, so a fee changed
+    // (or waived) on a payout shows up in the total too.
+    feesProjected: dollars(sumCents(payouts, (p) => p.fee) + sumCents(allShares.filter((s) => !s.payout), (s) => s.fee)),
     pot: dollars(collected - paidGross),
     potIfPaidUp: dollars(collected - paidGross + behind),
     behind: dollars(behind),
@@ -638,21 +655,27 @@ export function arrearsByPeriod(
   upToPeriod: number,
 ): { period: number; amount: number }[] {
   const T = Math.min(upToPeriod, partner.term_months)
+  const member = members.find((m) => m.id === memberId)
+  if (!member || !isActive(member)) return []
   const owner = ownerResolver(members)
+  // One pass over the payments: what they paid for each month, and in all.
+  const paidIn = new Map<number, number>()
+  let paidTotal = 0
+  for (const c of contributions) {
+    if (!isLive(c) || owner(c.member_id) !== memberId) continue
+    const cents = toCents(c.amount)
+    paidTotal += cents
+    paidIn.set(c.period, (paidIn.get(c.period) ?? 0) + cents)
+  }
+  const due = Math.round((toCents(partner.hand_amount) * halvesOf(member)) / 2)
   const months: { period: number; cents: number }[] = []
   let dueTotal = 0
   for (let p = 1; p <= T; p++) {
-    const row = periodRows(partner, members, contributions, p).find((r) => r.member.id === memberId)
-    if (!row) return []
-    dueTotal += toCents(row.due)
-    const gap = toCents(row.remaining)
+    dueTotal += due
+    const gap = due - (paidIn.get(p) ?? 0)
     if (gap > 0) months.push({ period: p, cents: gap })
   }
   // Payments for any month (including ahead) count against the arrears.
-  const paidTotal = sumCents(
-    contributions.filter((c) => isLive(c) && owner(c.member_id) === memberId),
-    (c) => c.amount,
-  )
   let budget = Math.max(0, dueTotal - paidTotal)
   if (budget === 0) return []
   const out: { period: number; amount: number }[] = []
@@ -675,17 +698,29 @@ export function moveSlot(order: string[], from: number, to: number): string[] {
   return next
 }
 
-/** Shuffles only the slots nobody has drawn from yet, keeping paid draws where they are. */
+/**
+ * Shuffles only the slots nobody has drawn from yet, keeping paid draws where
+ * they are. Slots only trade places with slots of the same weight (a lone half
+ * hand weighs half a draw), so the running total in front of every paid draw
+ * stays the same and no paid draw changes month.
+ */
 export function shuffleUnpaid(schedule: DrawSlot[], random: () => number = Math.random): string[] {
   const order = scheduleOrder(schedule)
-  const open = schedule.filter((s) => !s.locked).map((s) => s.index)
-  const entries = open.map((i) => order[i])
-  for (let i = entries.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1))
-    ;[entries[i], entries[j]] = [entries[j], entries[i]]
+  const weight = (s: DrawSlot) => (s.half ? s.shares.length : 2)
+  const classes = groupBy(
+    schedule.filter((s) => !s.locked),
+    (s) => String(weight(s)),
+  )
+  for (const slots of classes.values()) {
+    const open = slots.map((s) => s.index)
+    const entries = open.map((i) => order[i])
+    for (let i = entries.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1))
+      ;[entries[i], entries[j]] = [entries[j], entries[i]]
+    }
+    open.forEach((slotIndex, k) => {
+      order[slotIndex] = entries[k]
+    })
   }
-  open.forEach((slotIndex, k) => {
-    order[slotIndex] = entries[k]
-  })
   return order
 }

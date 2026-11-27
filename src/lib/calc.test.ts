@@ -282,6 +282,22 @@ describe('half hands', () => {
     expect(sched[0].done).toBe(false)
   })
 
+  it('never moves a paid draw when shuffling around a lone half hand', () => {
+    // a's lone half weighs half a draw: swapping it past b's paid draw would push b into month 3.
+    const members = [member('a', 0.5, 1), member('b', 1, 2), member('c', 1, 3), member('d', 1, 4)]
+    const p = partner({ term_months: 4 })
+    const before = buildSchedule(p, members, [payout('b', 2, 40000, 2000)])
+    expect(before.map((s) => s.period)).toEqual([1, 2, 3, 4])
+    for (const r of [0, 0.3, 0.6, 0.99]) {
+      const order = shuffleUnpaid(before, () => r)
+      const after = buildSchedule({ ...p, draw_order: order }, members, [payout('b', 2, 40000, 2000)])
+      const b = after.find((s) => s.shares[0].memberId === 'b')!
+      expect(b.period).toBe(2)
+      expect(b.locked).toBe(true)
+      expect([...order].sort()).toEqual(['a|', 'b', 'c', 'd'])
+    }
+  })
+
   it('moves and shuffles shared slots as one unit', () => {
     const members = [member('a', 1, 1), member('b', 0.5, 2), member('c', 0.5, 3), member('d', 1, 4)]
     const sched = buildSchedule(partner({ term_months: 3 }), members, [])
@@ -383,6 +399,22 @@ describe('voids, replacements and risk', () => {
       { period: 1, amount: 6000 },
       { period: 2, amount: 10000 },
     ])
+  })
+
+  it('has no arrears for a member who has left', () => {
+    const members = [{ ...member('a', 1, 1), replaced_by: 'b', transfer_mode: 'refund' as const }, member('b', 1, 2)]
+    expect(arrearsByPeriod(partner(), members, [], 'a', 3)).toEqual([])
+    expect(arrearsByPeriod(partner(), members, [], 'b', 2)).toEqual([
+      { period: 1, amount: 10000 },
+      { period: 2, amount: 10000 },
+    ])
+  })
+
+  it('counts a waived fee in the projected total', () => {
+    const members = [member('a', 1, 1), member('b', 1, 2), member('c', 1, 3), member('d', 1, 4)]
+    const s = summarizePartner(partner(), members, [], [payout('a', 1, 40000, 0)], new Date(2026, 1, 20))
+    expect(s.feesEarned).toBe(0)
+    expect(s.feesProjected).toBe(6000) // three draws still to pay at J$2,000
   })
 
   it('lists draws due within a week, including overdue', () => {

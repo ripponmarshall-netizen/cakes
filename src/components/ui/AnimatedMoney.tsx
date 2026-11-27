@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { formatMoney } from '../../lib/format'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { formatMoney, formatMoneyShort } from '../../lib/format'
 
 const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
@@ -29,10 +29,45 @@ const SETTLED = 1 - 8 * Math.exp(-7)
  * A money amount that counts to its new value instead of jumping, in tabular
  * figures. Pass `from={0}` for a hero total that counts up when it first shows.
  */
-export function AnimatedMoney({ value, className = '', duration = 750, from: start0 }: { value: number; className?: string; duration?: number; from?: number }) {
+export function AnimatedMoney({
+  value,
+  className = '',
+  duration = 750,
+  from: start0,
+  fit = false,
+}: {
+  value: number
+  className?: string
+  duration?: number
+  from?: number
+  /** Switch to the short form (J$12.8M) when the full amount doesn't fit the box, rather than cutting it off. */
+  fit?: boolean
+}) {
   const [shown, setShown] = useState(start0 ?? value)
   const from = useRef(start0 ?? value)
   const frame = useRef(0)
+  const box = useRef<HTMLSpanElement>(null)
+  const probeFull = useRef<HTMLSpanElement>(null)
+  const probeShort = useRef<HTMLSpanElement>(null)
+  // 0: the full amount fits; 1: the short form; 2: the short form, smaller.
+  const [squeeze, setSqueeze] = useState(0)
+
+  // Measures the final amount (not each counting frame) against the room it has.
+  useLayoutEffect(() => {
+    if (!fit) return
+    const el = box.current
+    const full = probeFull.current
+    const short = probeShort.current
+    if (!el || !full || !short) return
+    const measure = () => {
+      const room = el.clientWidth + 0.5
+      setSqueeze(full.offsetWidth <= room ? 0 : short.offsetWidth <= room ? 1 : 2)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [fit, value])
 
   useEffect(() => {
     const start = from.current
@@ -63,7 +98,21 @@ export function AnimatedMoney({ value, className = '', duration = 750, from: sta
     }
   }, [value, duration])
 
-  return <span className={`mono ${className}`}>{formatMoney(p2(shown, value))}</span>
+  const amount = p2(shown, value)
+  if (!fit) return <span className={`mono ${className}`}>{formatMoney(amount)}</span>
+  const probe = 'pointer-events-none invisible absolute left-0 top-0 whitespace-nowrap'
+  return (
+    <span ref={box} className={`mono relative overflow-hidden whitespace-nowrap ${className}`} title={squeeze ? formatMoney(value) : undefined}>
+      <span style={squeeze === 2 ? { fontSize: '0.82em' } : undefined}>{squeeze ? formatMoneyShort(amount) : formatMoney(amount)}</span>
+      {/* The final amount in both forms, invisible, to measure against. */}
+      <span ref={probeFull} aria-hidden className={probe}>
+        {formatMoney(value)}
+      </span>
+      <span ref={probeShort} aria-hidden className={probe}>
+        {formatMoneyShort(value)}
+      </span>
+    </span>
+  )
 }
 
 // While counting, drop cents so the digits don't flicker; land on the exact value.

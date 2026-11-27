@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field, Input, MoneyInput, Segmented } from '../ui/Input'
 import { Icon } from '../ui/Icon'
+import { Notice } from '../ui/Notice'
 import { MethodPicker } from './MethodPicker'
 import { scheduleOrder } from '../../lib/calc'
 import { useLast } from '../../hooks/usePresence'
@@ -130,22 +131,21 @@ export function ReplaceMemberModal({
         </Field>
 
         {mode === 'buyout' ? (
-          <p className="rounded-2xl bg-sky-50 px-4 py-3 text-xs leading-relaxed text-sky-900 ring-1 ring-inset ring-sky-200/60">
+          <Notice tone="info">
             {name.trim() || 'The new member'} pays {old.name} back privately. The {formatMoney(m.paid)} already paid
             {hasDrawn && <> and the {formatMoney(m.received)} already drawn</>} carry over to the new member, who continues
             at {formatMoney(m.monthlyDue)} a month in the same draw position.
-          </p>
+          </Notice>
         ) : hasDrawn ? (
-          <p className="flex items-start gap-2 rounded-2xl bg-rose-50 px-4 py-3 text-xs leading-relaxed text-rose-900 ring-1 ring-inset ring-rose-200/70">
-            <Icon name="alert" size={16} className="mt-px shrink-0" />
+          <Notice tone="danger">
             {old.name} has already drawn, so a refund doesn’t make sense. Use a buy-out — the new member takes on what’s still owed.
-          </p>
+          </Notice>
         ) : (
           <>
-            <p className="rounded-2xl bg-sky-50 px-4 py-3 text-xs leading-relaxed text-sky-900 ring-1 ring-inset ring-sky-200/60">
+            <Notice tone="info">
               {old.name} gets money back from the pot. {name.trim() || 'The new member'} starts from month 1 and must catch up (
               {formatMoney(m.dueToDate)} due so far).
-            </p>
+            </Notice>
             <Field label="Refund to old member" hint={`They paid in ${formatMoney(m.paid)}. Enter 0 if you’ll settle it later.`}>
               <MoneyInput value={refund} onChange={(e) => setRefund(e.target.value)} />
             </Field>

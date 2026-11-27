@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePartnerData } from '../../hooks/usePartnerData'
-import { summarizePartner, toCents, type DrawShare } from '../../lib/calc'
+import { noDrawMonths, summarizePartner, toCents, type DrawShare } from '../../lib/calc'
 import { formatDate, formatHands, formatMoney, formatMoneyShort, periodLabel, timeAgo } from '../../lib/format'
 import { Button, IconButton } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
@@ -18,7 +18,7 @@ import { HistoryModal } from './HistoryModal'
 import { ExportModal } from './ExportModal'
 import { CashCountModal } from './CashCountModal'
 import { NextRoundModal } from './NextRoundModal'
-import { Avatar, type PartnerCtx } from './shared'
+import { Avatar, CycleTrack, type PartnerCtx } from './shared'
 
 type Tab = 'payments' | 'draws' | 'members'
 
@@ -62,10 +62,13 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
   const next = summary.nextDraw
   const nextShares = next ? next.shares.filter((s) => !s.payout) : []
   const behindCount = summary.members.filter((m) => m.behind > 0).length
-  const progress = Math.max(0, Math.min(1, summary.rawPeriod / partner.term_months))
   // Counted in draw slots (two half hands share one), matching the Draws tab.
   const drawsDone = summary.schedule.filter((s) => s.done).length
-  const lastCount = cashCounts.reduce<(typeof cashCounts)[number] | null>((a, c) => (!a || c.created_at > a.created_at ? c : a), null)
+  // The latest count by the day it was counted (a count can be entered a day or two late).
+  const lastCount = cashCounts.reduce<(typeof cashCounts)[number] | null>(
+    (a, c) => (!a || c.counted_on > a.counted_on || (c.counted_on === a.counted_on && c.created_at > a.created_at) ? c : a),
+    null,
+  )
   const lastGap = lastCount ? Math.round((Number(lastCount.counted) - Number(lastCount.expected)) * 100) / 100 : 0
   // Offer the next round in the last month, and once the cycle is over.
   const nearEnd = status === 'complete' || (status === 'active' && period >= partner.term_months)
@@ -138,9 +141,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
             </p>
           </div>
 
-          <div className="relative mt-5 h-1 overflow-hidden rounded-full bg-accent-500/15" aria-hidden>
-            <div className="h-full origin-left animate-grow-x rounded-full bg-accent-600 transition-[width] duration-1000 ease-out" style={{ width: `${progress * 100}%` }} />
-          </div>
+          <CycleTrack term={partner.term_months} rawPeriod={summary.rawPeriod} noDraw={noDrawMonths(partner)} track="bg-accent-500/15" className="relative mt-5" />
 
           <div className="relative mt-5 grid grid-cols-3 gap-2 sm:gap-3">
             <HeroStat label="Collected" value={summary.collected} sub={`of ${formatMoney(summary.dueToDate)}`} subShort={`of ${formatMoneyShort(summary.dueToDate)}`} />
@@ -158,7 +159,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
         </div>
         {lastCount && (
           <p className="-mt-2 px-1 text-xs text-ink-500">
-            Cash last counted {timeAgo(lastCount.created_at)}:{' '}
+            Cash last counted {timeAgo(lastCount.counted_on)}:{' '}
             {lastGap === 0 ? (
               <span className="font-semibold text-brand-700">matched</span>
             ) : (
@@ -217,7 +218,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
             <div className="absolute inset-y-0 left-0 w-1 bg-accent-600" aria-hidden />
             <div className="flex items-center justify-between gap-3">
               <p className="flex items-center gap-1.5 text-[15px] font-semibold text-ink-900">
-                <Icon name="gift" size={15} className="text-accent-600" /> Next draw
+                <Icon name="draw" size={15} className="text-accent-600" /> Next draw
               </p>
               <span className="text-xs font-semibold text-ink-500">
                 {periodLabel(partner.start_date, next.period)}
@@ -233,18 +234,12 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
                   <li key={share.memberId} className="flex items-center gap-3">
                     <Avatar name={m.member.name} id={m.member.id} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14.5px] font-semibold text-ink-900">
-                        {m.member.name}
-                        {share.half ? (
-                          <span className="font-medium text-ink-400"> · ½ hand</span>
-                        ) : (
-                          m.hands > 1 && <span className="font-medium text-ink-400"> · hand {share.handNo}</span>
-                        )}
-                      </p>
-                      <p className="num text-[13px] text-ink-500">
+                      <p className="truncate text-[14.5px] font-semibold text-ink-900">{m.member.name}</p>
+                      <p className="num text-[13px] leading-snug text-ink-500">
                         gets <strong className="text-brand-700">{formatMoney(share.net)}</strong>
-                        {share.fee > 0 && <> after {formatMoney(share.fee)} fee</>}
-                        {m.behind > 0 && <span className="font-semibold text-rose-600"> · owes {formatMoney(m.behind)}</span>}
+                        {share.half ? ' · ½ hand' : m.hands > 1 ? ` · hand ${share.handNo}` : ''}
+                        {share.fee > 0 && <span className="max-[359px]:hidden"> · {formatMoney(share.fee)} fee</span>}
+                        {m.behind > 0 && <span className="block font-semibold text-rose-600">owes {formatMoney(m.behind)}</span>}
                       </p>
                     </div>
                     <Button variant="accent" size="sm" onClick={() => setPaying(share)}>
@@ -269,7 +264,7 @@ export function PartnerView({ partnerId, onGone, onOpen }: { partnerId: string; 
             onChange={openTab}
             options={[
               { value: 'payments', label: 'Payments', icon: 'wallet' },
-              { value: 'draws', label: 'Draws', icon: 'gift' },
+              { value: 'draws', label: 'Draws', icon: 'draw' },
               { value: 'members', label: 'Members', icon: 'users' },
             ]}
           />
@@ -338,9 +333,8 @@ function HeroStat({ label, value, sub, subShort }: { label: string; value: numbe
   return (
     <div className="min-w-0 rounded-2xl bg-surface/70 px-2 py-2.5 ring-1 ring-inset ring-accent-500/15 sm:px-3.5">
       <p className="truncate text-xs font-medium text-ink-500">{label}</p>
-      {/* The narrowest phones get short amounts (J$710k) rather than cut-off ones. */}
-      <AnimatedMoney value={value} className="mt-0.5 block truncate text-[13.5px] font-semibold text-ink-900 max-[359px]:hidden sm:text-lg" />
-      <span className="mono mt-0.5 block truncate text-[13.5px] font-semibold text-ink-900 min-[360px]:hidden">{formatMoneyShort(value)}</span>
+      {/* Short amounts (J$12.8M) only when the full one won't fit, rather than cut-off ones. */}
+      <AnimatedMoney fit value={value} className="mt-0.5 block text-[13.5px] font-semibold text-ink-900 sm:text-lg" />
       <p className="num truncate text-[10.5px] tracking-tight text-ink-400 sm:text-[11px] sm:tracking-normal">
         <span className={subShort ? 'max-[359px]:hidden' : ''}>{sub}</span>
         {subShort && <span className="min-[360px]:hidden">{subShort}</span>}

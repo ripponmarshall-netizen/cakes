@@ -13,6 +13,7 @@ import { Button, LinkButton } from '../ui/Button'
 import { Field, Input, Textarea } from '../ui/Input'
 import { Icon } from '../ui/Icon'
 import { Badge } from '../ui/Badge'
+import { Notice } from '../ui/Notice'
 import { RiskBadge, StandingBadge } from './MembersTab'
 import { StatementModal } from './StatementModal'
 import { ReplaceMemberModal } from './ReplaceMemberModal'
@@ -168,17 +169,11 @@ export function MemberModal({
       <Field label="Notes (optional)">
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Wants to draw in December…" />
       </Field>
-      {handsChangeNote && (
-        <p className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
-          <Icon name="alert" size={16} className="mt-px shrink-0" />
-          <span>{handsChangeNote}</span>
-        </p>
-      )}
+      {handsChangeNote && <Notice tone="warn">{handsChangeNote}</Notice>}
       {handsN % 1 !== 0 && halfSteps && (
-        <p className="flex items-start gap-2.5 rounded-2xl bg-sky-50 px-3.5 py-3 text-xs leading-relaxed text-sky-900 ring-1 ring-inset ring-sky-200/60">
-          <Icon name="info" size={16} className="mt-px shrink-0" />
+        <Notice tone="info">
           A half hand pays {formatMoney(partner.hand_amount / 2)} a month and shares one draw with another half hand — each gets half.
-        </p>
+        </Notice>
       )}
     </form>
   )
@@ -285,18 +280,11 @@ export function MemberModal({
             )}
 
             {s.risk && (
-              <p
-                className={`mb-4 flex items-start gap-2.5 rounded-2xl px-4 py-3 text-xs leading-relaxed ring-1 ring-inset ${
-                  s.risk === 'high' ? 'bg-rose-50 text-rose-900 ring-rose-200/70' : 'bg-amber-50 text-amber-900 ring-amber-200/70'
-                }`}
-              >
-                <Icon name="shield" size={16} className="mt-px shrink-0" />
-                <span>
-                  Has drawn {formatMoney(s.receivedGross)} but paid in {formatMoney(s.paid)}. If they stop paying, the group is short{' '}
-                  <strong className="num">{formatMoney(s.exposure)}</strong>.
-                  {s.risk === 'high' && owedMonths.length > 0 && <> Already behind for {monthsLabel(owedMonths).toLowerCase()}.</>}
-                </span>
-              </p>
+              <Notice tone={s.risk === 'high' ? 'danger' : 'warn'} icon="shield" className="mb-4">
+                Has drawn {formatMoney(s.receivedGross)} but paid in {formatMoney(s.paid)}. If they stop paying, the group is short{' '}
+                <strong className="num">{formatMoney(s.exposure)}</strong>.
+                {s.risk === 'high' && owedMonths.length > 0 && <> Already behind for {monthsLabel(owedMonths).toLowerCase()}.</>}
+              </Notice>
             )}
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -312,7 +300,7 @@ export function MemberModal({
             </div>
 
             <p className="eyebrow mb-2 mt-6 px-1">Draws</p>
-            <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
+            <ul className="group-list">
               {s.shares.map((slot) => {
                 const overdue = !slot.payout && slot.period < ctx.summary.rawPeriod
                 const thisMonth = !slot.payout && slot.period === ctx.summary.rawPeriod
@@ -324,7 +312,7 @@ export function MemberModal({
                           slot.payout ? 'bg-brand-50 text-brand-600' : overdue ? 'bg-rose-50 text-rose-500' : 'bg-accent-50 text-accent-600'
                         }`}
                       >
-                        <Icon name={slot.payout ? 'check' : 'gift'} size={15} />
+                        <Icon name={slot.payout ? 'check' : 'draw'} size={15} />
                       </span>
                       <span>
                         {periodLabel(partner.start_date, slot.period)}

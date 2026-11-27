@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { formatHands, formatMoney, formatMoneyShort, monthsLabel } from './format'
+import { formatHands, formatMoney, formatMoneyShort, monthsLabel, timeAgo } from './format'
+
+describe('timeAgo', () => {
+  it('reads a plain date as a local day, not UTC midnight', () => {
+    const now = new Date(2026, 10, 27, 20, 0)
+    expect(timeAgo('2026-11-27', now)).toBe('today')
+    expect(timeAgo('2026-11-26', now)).toBe('yesterday')
+    expect(timeAgo('2026-11-24', now)).toBe('3 days ago')
+  })
+})
 
 describe('formatHands', () => {
   it('uses the singular only for a half or one hand', () => {

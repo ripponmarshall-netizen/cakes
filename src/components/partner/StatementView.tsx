@@ -57,7 +57,7 @@ export function StatementView({
 
       <section>
         <h3 className="eyebrow mb-2">Draws</h3>
-        <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
+        <ul className="group-list">
           {m.shares.map((s) => (
             <li key={`${s.slotIndex}-${s.handNo}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
               <span className="min-w-0 font-semibold">

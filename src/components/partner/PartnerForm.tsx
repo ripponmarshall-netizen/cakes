@@ -9,6 +9,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field, Input, MoneyInput, Segmented, Textarea, Toggle } from '../ui/Input'
 import { Icon } from '../ui/Icon'
+import { Notice } from '../ui/Notice'
 
 interface Props {
   open: boolean
@@ -165,16 +166,13 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, members = 
         </div>
 
         {totalHands > 0 && termN !== Math.ceil(totalHands) && skips.length === 0 && (
-          <div className="flex items-start gap-2.5 rounded-2xl bg-sky-50 px-3.5 py-3 text-xs leading-relaxed text-sky-900 ring-1 ring-inset ring-sky-200/60">
-            <Icon name="info" size={16} className="mt-px shrink-0" />
-            <span className="flex-1">
-              {formatHands(totalHands)} over {plural(termN, 'month')} — draws will be spread out so the pot always covers
-              them{termN > totalHands ? ', or pick the months with no draw below' : ''}.{' '}
-              <button type="button" className="font-bold underline underline-offset-2" onClick={() => setTerm(String(Math.ceil(totalHands)))}>
-                Match hands ({Math.ceil(totalHands)})
-              </button>
-            </span>
-          </div>
+          <Notice tone="info">
+            {formatHands(totalHands)} over {plural(termN, 'month')} — draws will be spread out so the pot always covers
+            them{termN > totalHands ? ', or pick the months with no draw below' : ''}.{' '}
+            <button type="button" className="font-bold underline underline-offset-2" onClick={() => setTerm(String(Math.ceil(totalHands)))}>
+              Match hands ({Math.ceil(totalHands)})
+            </button>
+          </Notice>
         )}
 
         <Field label="First month starts" hint="Payments are due monthly from this date. A new month begins on the same day each month.">
@@ -275,14 +273,11 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, members = 
               </div>
             )}
             {shortfall && (
-              <p className="mt-3 flex items-start gap-2.5 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
-                <Icon name="alert" size={15} className="mt-px shrink-0" />
-                <span>
-                  Even with everyone paid up, the pot is short for the month {shortfall.period} draw (up to{' '}
-                  <strong className="num">{formatMoney(shortfall.short)}</strong>). Put a no-draw month earlier — month 1 is the
-                  usual one — or plan to front the difference.
-                </span>
-              </p>
+              <Notice tone="warn" className="mt-3">
+                Even with everyone paid up, the pot is short for the month {shortfall.period} draw (up to{' '}
+                <strong className="num">{formatMoney(shortfall.short)}</strong>). Put a no-draw month earlier — month 1 is the usual
+                one — or plan to front the difference.
+              </Notice>
             )}
           </div>
         )}
@@ -307,10 +302,9 @@ export function PartnerForm({ open, onClose, partner, totalHands = 0, members = 
         </Toggle>
 
         {partner && hasActivity && (
-          <p className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-200/70">
-            <Icon name="alert" size={16} className="mt-px shrink-0" />
+          <Notice tone="warn">
             Payments are already recorded. Changing the hand, length or start date changes what everyone owes and when they draw.
-          </p>
+          </Notice>
         )}
 
         {partner && (

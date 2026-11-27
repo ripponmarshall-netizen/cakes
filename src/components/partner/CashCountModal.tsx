@@ -6,6 +6,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field, Input, MoneyInput } from '../ui/Input'
 import { Badge } from '../ui/Badge'
+import { Notice } from '../ui/Notice'
 import type { PartnerCtx } from './shared'
 
 /**
@@ -30,7 +31,7 @@ export function CashCountModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: 
   const expected = summary.pot
   const countedN = counted.trim() === '' ? null : Number(counted)
   const diff = countedN === null || !Number.isFinite(countedN) ? null : Math.round((countedN - expected) * 100) / 100
-  const past = [...cashCounts].sort((a, b) => b.created_at.localeCompare(a.created_at))
+  const past = [...cashCounts].sort((a, b) => b.counted_on.localeCompare(a.counted_on) || b.created_at.localeCompare(a.created_at))
 
   async function save(e: FormEvent) {
     e.preventDefault()
@@ -76,21 +77,13 @@ export function CashCountModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: 
         </div>
 
         {diff !== null && (
-          <p
-            className={`animate-fade rounded-2xl px-4 py-3 text-sm font-semibold ring-1 ring-inset ${
-              diff === 0
-                ? 'bg-brand-50 text-brand-800 ring-brand-600/15'
-                : diff > 0
-                  ? 'bg-sky-50 text-sky-900 ring-sky-200/70'
-                  : 'bg-rose-50 text-rose-900 ring-rose-200/70'
-            }`}
-          >
+          <Notice key={Math.sign(diff)} role="status" tone={diff === 0 ? 'success' : diff > 0 ? 'info' : 'danger'} className="animate-fade font-semibold">
             {diff === 0
               ? 'Matches the ledger.'
               : diff > 0
                 ? `${formatMoney(diff)} more than the ledger — a payment not recorded yet?`
                 : `${formatMoney(-diff)} short — a draw or refund not recorded, or cash missing?`}
-          </p>
+          </Notice>
         )}
 
         <Field label="Note (optional)">
@@ -100,7 +93,7 @@ export function CashCountModal({ ctx, open, onClose }: { ctx: PartnerCtx; open: 
         {past.length > 0 && (
           <section>
             <p className="eyebrow mb-2 mt-2 px-1">Earlier counts</p>
-            <ul className="divide-y divide-line-soft rounded-2xl ring-1 ring-inset ring-line">
+            <ul className="group-list">
               {past.map((c) => {
                 const d = Math.round((Number(c.counted) - Number(c.expected)) * 100) / 100
                 return (
